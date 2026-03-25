@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Closed - Mathenge Voting</title>
+    <link rel="stylesheet" href="{% static 'css/closed.css' %}">
+</head>
+<body>
+    <div class="message-container">
+        <h2>🛑 Voting is Closed</h2>
+        <p>{{ message }}</p>
+
+        {% if session %}
+            <p>Voting was scheduled from:</p>
+            <p>
+                <strong>Start:</strong> {{ session.start_time|time:"h:i A" }} <br>
+                <strong>End:</strong> {{ session.end_time|time:"h:i A" }}
+            </p>
+            <p><em>On the date:</em> {{ session.date|date:"D, d M Y" }}</p>
+        {% endif %}
+
+        <a href="{% url 'home' %}" class="back-btn">🏠 Back to Home</a>
+    </div>
+</body>
+</html>

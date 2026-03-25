@@ -10,4 +10,5 @@ urlpatterns = [
     path('thank-you/', views.thank_you, name='thank_you'),
     path('already-voted/', views.already_voted, name='already_voted'),
     path('results/', views.results_page, name='results_page'),
+    path('close/', views.close, name='close'),
 ]

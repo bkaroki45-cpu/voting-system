@@ -1,89 +1,102 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vote - Mathenge Voting</title>
-
-    {% load static %}
     <link rel="stylesheet" href="{% static 'css/votepage.css' %}">
 </head>
-
 <body>
-    <div class="container">
+<div class="container">
 
-        <h1>🗳️ Cast Your Vote</h1>
+    <h1>🗳️ Cast Your Vote</h1>
 
-        <form method="POST">
-            {% csrf_token %}
-
-            {% for position in positions %}
-            <div class="position-card">
-
-                <!-- Position Name -->
-                <h2>{{ position.name }}</h2>
-
-                <div class="candidates-list">
-                    {% for candidate in position.candidate_set.all %}
-
-                    <label class="candidate">
-
-                        <!-- Radio Button -->
-                        <input 
-                            type="radio"
-                            name="position_{{ position.id }}"
-                            value="{{ candidate.id }}"
-                            required
-                        >
-
-                        <!-- Candidate Image -->
-                        <div class="candidate-img">
-                            {% if candidate.photo %}
-                                <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}">
-                            {% else %}
-                                <img src="{% static 'images/default.png' %}" alt="No image">
-                            {% endif %}
-                        </div>
-
-                        <!-- Candidate Info -->
-                        <div class="candidate-info">
-
-                            <!-- Name -->
-                            <span class="candidate-name">
-                                {{ candidate.name }}
-                                {% if candidate.deputy_name %}
-                                    & {{ candidate.deputy_name }}
-                                {% endif %}
-                            </span>
-
-                            <!-- Deputy label -->
-                            {% if candidate.deputy_name %}
-                                <small class="deputy-text">
-                                    President & Deputy Team
-                                </small>
-                            {% endif %}
-
-                        </div>
-
-                    </label>
-
-                    {% empty %}
-                        <p class="no-candidates">
-                            No candidates available for this position
-                        </p>
-                    {% endfor %}
-                </div>
-
-            </div>
-            {% endfor %}
-
-            <!-- Submit Button -->
-            <button type="submit" class="btn-submit">
-                ✅ Submit Vote
-            </button>
-
-        </form>
-
+    {% if session %}
+    <div id="countdown" class="countdown-timer">
+        Voting ends in: <span id="time"></span>
     </div>
+
+    <script>
+        // Use full datetime passed from Django
+        const endTime = new Date("{{ session_end|date:'c' }}").getTime();
+
+        const countdown = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            if (distance <= 0) {
+                clearInterval(countdown);
+                document.getElementById("time").innerHTML = "Voting is closed";
+
+                // Disable all vote buttons
+                document.querySelectorAll("button[type='submit']").forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.background = "#888"; // Optional: grey out
+                    btn.style.cursor = "not-allowed";
+                });
+
+                // Optionally show an alert
+                // alert("Voting session has ended!");
+            } else {
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000*60*60));
+                const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
+                const seconds = Math.floor((distance % (1000*60)) / 1000);
+                document.getElementById("time").innerHTML = hours + "h " + minutes + "m " + seconds + "s";
+            }
+        }, 1000);
+    </script>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {% for position in positions %}
+        <div class="position-card">
+            <h2>{{ position.name }}</h2>
+
+            <div class="candidates-list">
+                {% for candidate in position.candidate_set.all %}
+                <label class="candidate">
+
+                    <!-- Radio Button -->
+                    <input 
+                        type="radio"
+                        name="position_{{ position.id }}"
+                        value="{{ candidate.id }}"
+                        required
+                    >
+
+                    <!-- Candidate Image -->
+                    <div class="candidate-img">
+                        {% if candidate.photo %}
+                            <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}">
+                        {% else %}
+                            <img src="{% static 'images/default.png' %}" alt="No image">
+                        {% endif %}
+                    </div>
+
+                    <!-- Candidate Info -->
+                    <div class="candidate-info">
+                        <span class="candidate-name">
+                            {{ candidate.name }}
+                            {% if candidate.deputy_name %}& {{ candidate.deputy_name }}{% endif %}
+                        </span>
+                        {% if candidate.deputy_name %}
+                            <small class="deputy-text">President & Deputy Team</small>
+                        {% endif %}
+                    </div>
+
+                </label>
+                {% empty %}
+                    <p class="no-candidates">No candidates available for this position</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-submit">✅ Submit Vote</button>
+    </form>
+</div>
 </body>
 </html>

@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 # -----------------------------
 # 1️⃣ Custom Student Model (for manually registered users)
@@ -66,3 +67,27 @@ class SchoolStudent(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.admission_number})"
+    
+
+
+class VotingSession(models.Model):
+    date = models.DateField(default=timezone.localdate)  # voting day
+    start_time = models.TimeField()  # e.g., 9:30 AM
+    end_time = models.TimeField()    # e.g., 3:30 PM
+    active = models.BooleanField(default=False)
+
+    def is_open(self):
+        now = timezone.localtime()
+        if not self.active:
+            return False
+        # Combine date with start/end time for comparison
+        start_dt = timezone.make_aware(
+            timezone.datetime.combine(self.date, self.start_time)
+        )
+        end_dt = timezone.make_aware(
+            timezone.datetime.combine(self.date, self.end_time)
+        )
+        return start_dt <= now <= end_dt
+
+    def __str__(self):
+        return f"Voting on {self.date}: {self.start_time} - {self.end_time} | Active: {self.active}"

@@ -1,5 +1,5 @@
 # admin.py
-
+from .models import VotingSession
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
@@ -65,6 +65,12 @@ class UserAdmin(BaseUserAdmin):
     def get_admission_number(self, obj):
         return obj.schoolstudent.admission_number if hasattr(obj, 'schoolstudent') else '-'
     get_admission_number.short_description = 'Admission Number'
+
+
+@admin.register(VotingSession)
+class VotingSessionAdmin(admin.ModelAdmin):
+    list_display = ('start_time', 'end_time', 'active')
+    list_editable = ('active',)
 
 
 # -----------------------------

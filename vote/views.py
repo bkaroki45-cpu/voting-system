@@ -1,5 +1,5 @@
 # views.py
-
+from .models import VotingSession
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -98,36 +98,53 @@ def student_login(request):
 # -----------------------------
 # Voting page
 # -----------------------------
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from .models import Position, Candidate, Vote, VotingSession
+from django.contrib.auth.decorators import login_required
+
 @login_required
 def vote_page(request):
     user = request.user
 
+    # Get the latest active voting session
+    try:
+        session = VotingSession.objects.filter(active=True).latest('start_time')
+    except VotingSession.DoesNotExist:
+        session = None
+
+    # Block voting if session is inactive or closed
+    if not session or not session.is_open():
+        return render(request, 'vote/closed.html', {
+            'message': 'Voting is currently closed.',
+            'session': session
+        })
+
     # Check if user has already voted
     if Vote.objects.filter(user=user).exists():
-        # Redirect to results page instead of showing 'already_voted.html'
         return redirect('results_page')
 
     positions = Position.objects.all()
-    candidates = Candidate.objects.all()
 
     if request.method == "POST":
-        # Handle submitted votes
         for position in positions:
             candidate_id = request.POST.get(f'position_{position.id}')
             if candidate_id:
-                candidate = candidates.get(id=candidate_id)
-                Vote.objects.create(
-                    user=user,
-                    position=position,
-                    candidate=candidate
-                )
-        # Redirect to results page after voting
+                candidate = Candidate.objects.get(id=candidate_id)
+                Vote.objects.create(user=user, position=position, candidate=candidate)
         return redirect('results_page')
 
-    # If GET request, render voting page
+    # Combine session date + end_time for countdown
+    session_end = None
+    if session:
+        session_end = timezone.make_aware(
+            timezone.datetime.combine(session.date, session.end_time)
+        )
+
     return render(request, 'vote/vote_page.html', {
         'positions': positions,
-        'candidates': candidates
+        'session': session,
+        'session_end': session_end  # Pass full datetime to template
     })
 
 
@@ -148,18 +165,32 @@ def results_page(request):
     positions = Position.objects.all()
     results = []
 
+    try:
+        session = VotingSession.objects.latest('start_time')
+    except VotingSession.DoesNotExist:
+        session = None
+
     for position in positions:
         candidates = Candidate.objects.filter(position=position)
+        total_votes = Vote.objects.filter(candidate__position=position).count()
+
         candidate_results = []
         for candidate in candidates:
             vote_count = Vote.objects.filter(candidate=candidate).count()
+            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
+
             candidate_results.append({
                 'name': f"{candidate.name} & {candidate.deputy_name}" if candidate.deputy_name else candidate.name,
                 'votes': vote_count,
+                'percentage': round(percentage, 1),
+                'image': candidate.photo.url if candidate.photo else None
             })
-        results.append({
-            'position': position.name,
-            'candidates': candidate_results
-        })
 
-    return render(request, 'vote/results.html', {'results': results})
+        results.append({'position': position.name, 'candidates': candidate_results})
+
+    return render(request, 'vote/results.html', {'results': results, 'session': session})
+
+
+
+def close(request):
+    return render(request, 'vote/closed.html')

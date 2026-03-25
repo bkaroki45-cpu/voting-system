@@ -5,38 +5,70 @@
     <meta charset="UTF-8">
     <title>Election Results</title>
     <link rel="stylesheet" href="{% static 'css/results.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <div class="container">
-        <h1>Election Results</h1>
+<div class="container">
+    <h1 class="title">🗳️ Election Results</h1>
 
-        {% if results %}
-            {% for position in results %}
-                <div class="position-block">
-                    <h2>{{ position.position }}</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Candidate</th>
-                                <th>Votes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for candidate in position.candidates %}
-                                <tr>
-                                    <td>{{ candidate.name }}</td>
-                                    <td>{{ candidate.votes }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p>No results yet.</p>
-        {% endif %}
-
-        <a href="{% url 'vote_page' %}" class="back-link">Back to Vote Page</a>
+    {% if session and session.is_open %}
+    <div id="countdown" class="countdown-timer">
+        Voting ends in: <span id="time"></span>
     </div>
+
+    <script>
+        const endTime = new Date("{{ session.end_time|date:'Y-m-d H:i:s' }}").getTime();
+
+        const countdown = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            if (distance < 0) {
+                clearInterval(countdown);
+                document.getElementById("time").innerHTML = "Voting is closed";
+            } else {
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000*60*60));
+                const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
+                const seconds = Math.floor((distance % (1000*60)) / 1000);
+                document.getElementById("time").innerHTML = hours + "h " + minutes + "m " + seconds + "s";
+            }
+        }, 1000);
+    </script>
+    {% endif %}
+
+    {% if results %}
+        {% for position in results %}
+            <div class="position-card">
+                <h2>{{ position.position }}</h2>
+                <div class="candidates">
+                    {% for candidate in position.candidates %}
+                        <div class="candidate-card">
+                            {% if candidate.image %}
+                                <img src="{{ candidate.image }}" alt="{{ candidate.name }}" width="150">
+                            {% else %}
+                                <img src="{% static 'images/default.png' %}" alt="default" width="150">
+                            {% endif %}
+
+                            <h3>{{ candidate.name }}</h3>
+
+                            <div class="votes">
+                                <span>{{ candidate.votes }} votes</span>
+                                <span>{{ candidate.percentage }}%</span>
+                            </div>
+
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ candidate.percentage }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="no-results">No results yet.</p>
+    {% endif %}
+
+    <a href="{% url 'vote_page' %}" class="back-btn">⬅ Back to Vote</a>
+</div>
 </body>
 </html>

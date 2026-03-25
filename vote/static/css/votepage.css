@@ -49,6 +49,12 @@ h1 {
 /* -----------------------------
    CANDIDATE CARD
 ----------------------------- */
+.candidates-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
 .candidate {
     display: flex;
     align-items: center;
@@ -115,7 +121,7 @@ h1 {
 }
 
 /* -----------------------------
-   SELECTED STATE (🔥 important)
+   SELECTED STATE
 ----------------------------- */
 .candidate input:checked + img {
     border: 3px solid #28a745;
@@ -170,5 +176,9 @@ h1 {
 
     h1 {
         font-size: 22px;
+    }
+
+    .position-card {
+        padding: 15px;
     }
 }
