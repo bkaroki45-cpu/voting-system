@@ -1,0 +1,174 @@
+/* -----------------------------
+   GLOBAL STYLES
+----------------------------- */
+body {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* -----------------------------
+   CONTAINER
+----------------------------- */
+.container {
+    width: 90%;
+    max-width: 900px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* -----------------------------
+   HEADINGS
+----------------------------- */
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 28px;
+}
+
+.position-card {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    transition: 0.3s;
+}
+
+.position-card h2 {
+    margin-bottom: 15px;
+    font-size: 20px;
+    color: #fff;
+}
+
+/* -----------------------------
+   CANDIDATE CARD
+----------------------------- */
+.candidate {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.candidate-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.candidate-name {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.deputy-text {
+    font-size: 13px;
+    color: #ccc;
+}
+
+.no-candidates {
+    color: #ccc;
+    font-style: italic;
+}
+
+/* Hover effect */
+.candidate:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+}
+
+/* Radio button */
+.candidate input {
+    transform: scale(1.2);
+}
+
+/* Candidate image */
+.candidate img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+}
+
+/* Text container */
+.candidate span {
+    display: flex;
+    flex-direction: column;
+    font-size: 16px;
+}
+
+/* Deputy text */
+.candidate small {
+    font-size: 13px;
+    color: #ccc;
+}
+
+/* -----------------------------
+   SELECTED STATE (🔥 important)
+----------------------------- */
+.candidate input:checked + img {
+    border: 3px solid #28a745;
+}
+
+.candidate input:checked ~ span {
+    color: #28a745;
+    font-weight: bold;
+}
+
+/* -----------------------------
+   SUBMIT BUTTON
+----------------------------- */
+.btn-submit {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #28a745, #34d058);
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Hover */
+.btn-submit:hover {
+    background: linear-gradient(135deg, #218838, #2ecc71);
+    transform: translateY(-2px);
+}
+
+/* Click effect */
+.btn-submit:active {
+    transform: scale(0.98);
+}
+
+/* -----------------------------
+   RESPONSIVE
+----------------------------- */
+@media (max-width: 600px) {
+    .candidate {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .candidate img {
+        width: 50px;
+        height: 50px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+}

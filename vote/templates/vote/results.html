@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Election Results</title>
+    <link rel="stylesheet" href="{% static 'css/results.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Election Results</h1>
+
+        {% if results %}
+            {% for position in results %}
+                <div class="position-block">
+                    <h2>{{ position.position }}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Votes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for candidate in position.candidates %}
+                                <tr>
+                                    <td>{{ candidate.name }}</td>
+                                    <td>{{ candidate.votes }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No results yet.</p>
+        {% endif %}
+
+        <a href="{% url 'vote_page' %}" class="back-link">Back to Vote Page</a>
+    </div>
+</body>
+</html>
