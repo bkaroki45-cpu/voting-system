@@ -10,7 +10,7 @@
 <body>
 <div class="container">
 
-    <h1>🗳️ Cast Your Vote</h1>
+    <h1 class="title">🗳️ Cast Your Vote</h1>
 
     {% if session %}
     <div id="countdown" class="countdown-timer">
@@ -18,7 +18,6 @@
     </div>
 
     <script>
-        // Use full datetime passed from Django
         const endTime = new Date("{{ session_end|date:'c' }}").getTime();
 
         const countdown = setInterval(function() {
@@ -29,19 +28,16 @@
                 clearInterval(countdown);
                 document.getElementById("time").innerHTML = "Voting is closed";
 
-                // Disable all vote buttons
                 document.querySelectorAll("button[type='submit']").forEach(btn => {
                     btn.disabled = true;
-                    btn.style.background = "#888"; // Optional: grey out
+                    btn.style.background = "#888";
                     btn.style.cursor = "not-allowed";
                 });
 
-                // Optionally show an alert
-                // alert("Voting session has ended!");
             } else {
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000*60*60));
-                const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
-                const seconds = Math.floor((distance % (1000*60)) / 1000);
+                const hours = Math.floor((distance % (1000*60*60*24))/(1000*60*60));
+                const minutes = Math.floor((distance % (1000*60*60))/(1000*60));
+                const seconds = Math.floor((distance % (1000*60))/1000);
                 document.getElementById("time").innerHTML = hours + "h " + minutes + "m " + seconds + "s";
             }
         }, 1000);
@@ -54,34 +50,28 @@
         {% for position in positions %}
         <div class="position-card">
             <h2>{{ position.name }}</h2>
-
-            <div class="candidates-list">
+            <div class="candidates-grid">
                 {% for candidate in position.candidate_set.all %}
-                <label class="candidate">
+                <label class="candidate-card">
 
-                    <!-- Radio Button -->
-                    <input 
-                        type="radio"
-                        name="position_{{ position.id }}"
-                        value="{{ candidate.id }}"
-                        required
-                    >
+                    <input type="radio" name="position_{{ position.id }}" value="{{ candidate.id }}" required>
 
-                    <!-- Candidate Image -->
                     <div class="candidate-img">
                         {% if candidate.photo %}
                             <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}">
                         {% else %}
-                            <img src="{% static 'images/default.png' %}" alt="No image">
+                            <img src="{% static 'images/default.png' %}" alt="default">
                         {% endif %}
                     </div>
 
-                    <!-- Candidate Info -->
                     <div class="candidate-info">
-                        <span class="candidate-name">
-                            {{ candidate.name }}
+                        <span class="candidate-name">{{ candidate.name }}
                             {% if candidate.deputy_name %}& {{ candidate.deputy_name }}{% endif %}
                         </span>
+                        <br>
+                        {% if candidate.party %}
+                            <p class="party-text">Party: {{ candidate.party }}</p>
+                        {% endif %}
                         {% if candidate.deputy_name %}
                             <small class="deputy-text">President & Deputy Team</small>
                         {% endif %}

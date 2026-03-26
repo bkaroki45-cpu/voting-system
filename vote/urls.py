@@ -6,9 +6,7 @@ urlpatterns = [
     path('register/', views.student_register, name='register'),
     path('login/', views.student_login, name='login'),
     path('vote/', views.vote_page, name='vote_page'),
-    path('vote/success/', views.vote_page, name='vote_success'),
-    path('thank-you/', views.thank_you, name='thank_you'),
-    path('already-voted/', views.already_voted, name='already_voted'),
     path('results/', views.results_page, name='results_page'),
     path('close/', views.close, name='close'),
+    path('final_results/', views.final_results_page, name='final_results_page'),
 ]

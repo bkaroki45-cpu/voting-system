@@ -9,12 +9,25 @@ from datetime import timedelta
 
 
 class StudentRegisterForm(UserCreationForm):
-    full_name = forms.CharField(max_length=150)
-    admission_number = forms.CharField(max_length=50)
+    full_name = forms.CharField(
+        max_length=150,
+        help_text="Enter your full name exactly as it appears on your school ID. All letters will be capitalized automatically."
+    )
+    admission_number = forms.CharField(
+        max_length=50,
+        help_text="Enter your exact school admission number."
+    )
 
     class Meta:
         model = User
         fields = ['full_name', 'admission_number', 'password1', 'password2']
+
+    def clean_full_name(self):
+        """
+        Capitalize the full name before validation.
+        """
+        full_name = self.cleaned_data.get('full_name', '').strip()
+        return full_name.upper()  # Ensure all letters are uppercase
 
     def clean(self):
         cleaned_data = super().clean()
@@ -29,7 +42,8 @@ class StudentRegisterForm(UserCreationForm):
             )
         except SchoolStudent.DoesNotExist:
             raise forms.ValidationError(
-                "Your name or admission number does not match school records."
+                "Your name or admission number does not match school records. "
+                "Please enter your full name exactly as on your school ID."
             )
 
         # Check if this student already has a linked user
@@ -46,7 +60,8 @@ class StudentRegisterForm(UserCreationForm):
         user.username = self.cleaned_data['admission_number']
 
         # Save user to DB
-        user.save()
+        if commit:
+            user.save()
 
         # Link the saved user to the SchoolStudent
         full_name = self.cleaned_data['full_name']

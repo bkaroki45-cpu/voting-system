@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Final Results - Mathenge Voting</title>
+<link rel="stylesheet" href="{% static 'css/final_results.css' %}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <h1 class="title">🗳️ Final Election Results</h1>
+
+    {% if final_results %}
+        {% for position in final_results %}
+        <div class="position-card">
+            <h2 class="position-title">{{ position.position }}</h2>
+
+            <div class="candidates">
+                {% for candidate in position.candidates %}
+                <div class="candidate-card {% if candidate in position.winners %}winner{% else %}loser{% endif %}">
+                    <div class="candidate-photo">
+                        {% if candidate.photo %}
+                            <img src="{{ candidate.photo }}" alt="{{ candidate.name }}">
+                        {% else %}
+                            <img src="{% static 'images/default.png' %}" alt="default">
+                        {% endif %}
+                    </div>
+                    <div class="candidate-info">
+                        <h3>
+                            {{ candidate.name }}
+                            {% if candidate.party %}
+                                <p class="party-text">party: ({{ candidate.party }})</p>
+                            {% endif %}
+                        </h3>
+                        <p>{{ candidate.votes }} votes ({{ candidate.percentage }}%)</p>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: {{ candidate.percentage }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if position.winners %}
+            <div class="winner-section">
+                <h3>🏆 Winner{{ position.winners|length|pluralize }}</h3>
+                <div class="winners">
+                    {% for winner in position.winners %}
+                    <div class="winner-card">
+                        {% if winner.photo %}
+                            <img src="{{ winner.photo }}" alt="{{ winner.name }}">
+                        {% else %}
+                            <img src="{% static 'images/default.png' %}" alt="default">
+                        {% endif %}
+                        <h4>
+                            {{ winner.name }}
+                            {% if winner.party %}
+                                <small class="party-text">({{ winner.party }})</small>
+                            {% endif %}
+                        </h4>
+                        <p>{{ winner.votes }} votes ({{ winner.percentage }}%)</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="no-results">No results available yet.</p>
+    {% endif %}
+
+    <a href="{% url 'vote_page' %}" class="back-btn">⬅ Back to Vote</a>
+
+{% if error_message %}
+<p style="color:red;">{{ error_message }}</p>
+{% endif %}
+
+    <div class="comment-section">
+        <h2>💬 Comments</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="text" name="adm_number" placeholder="Admission Number" required>
+            <textarea name="message" placeholder="Write your message..." rows="3" required></textarea>
+            <button type="submit">Submit Comment</button>
+        </form>
+
+        <div class="comments-list">
+            {% for comment in comments %}
+            <div class="comment-card">
+                <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong>
+                <span>({{ comment.adm_number }})</span>
+                <p>{{ comment.message }}</p>
+            </div>
+            {% empty %}
+            <p>No comments yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const progresses = document.querySelectorAll('.progress');
+        progresses.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = "0";
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 100);
+        });
+    });
+</script>
+</body>
+</html>

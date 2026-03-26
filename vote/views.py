@@ -4,9 +4,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from .forms import StudentRegisterForm
-from .models import SchoolStudent, Candidate, Position, Vote
+from .models import SchoolStudent, Candidate, Position, Vote, Comment
 from django.contrib import messages
 from django.contrib.auth.models import User
+from datetime import datetime, date, time
+from django.utils import timezone
 
 # -----------------------------
 # Home page
@@ -95,14 +97,6 @@ def student_login(request):
     return render(request, 'vote/login.html')
 
 
-# -----------------------------
-# Voting page
-# -----------------------------
-from django.shortcuts import render, redirect
-from django.utils import timezone
-from .models import Position, Candidate, Vote, VotingSession
-from django.contrib.auth.decorators import login_required
-
 @login_required
 def vote_page(request):
     user = request.user
@@ -148,16 +142,7 @@ def vote_page(request):
     })
 
 
-@login_required
-def thank_you(request):
-    return render(request, 'vote/thank_you.html')
 
-@login_required
-def already_voted(request):
-    """
-    Display a page telling the user they have already voted.
-    """
-    return render(request, 'vote/already_voted.html')
 
 
 @login_required
@@ -165,6 +150,7 @@ def results_page(request):
     positions = Position.objects.all()
     results = []
 
+    # Get latest session
     try:
         session = VotingSession.objects.latest('start_time')
     except VotingSession.DoesNotExist:
@@ -181,16 +167,134 @@ def results_page(request):
 
             candidate_results.append({
                 'name': f"{candidate.name} & {candidate.deputy_name}" if candidate.deputy_name else candidate.name,
+                'party': candidate.party if candidate.party else '',
                 'votes': vote_count,
                 'percentage': round(percentage, 1),
-                'image': candidate.photo.url if candidate.photo else None
+                'photo': candidate.photo.url if candidate.photo else None
             })
 
-        results.append({'position': position.name, 'candidates': candidate_results})
+        results.append({
+            'position': position.name,
+            'candidates': candidate_results
+        })
 
-    return render(request, 'vote/results.html', {'results': results, 'session': session})
+    # ✅ Countdown timestamp
+    session_timestamp = None
+    session_end_datetime = None
+    if session:
+        # Combine session.date and end_time to a full datetime
+        session_end_datetime = timezone.make_aware(
+            datetime.combine(session.date, session.end_time)
+        )
+        session_timestamp = int(session_end_datetime.timestamp() * 1000)  # JS needs ms
+
+    return render(request, 'vote/results.html', {
+        'results': results,
+        'session': session,
+        'session_end': session_end_datetime,
+        'session_timestamp': session_timestamp
+    })
 
 
 
 def close(request):
     return render(request, 'vote/closed.html')
+
+@login_required
+def final_results_page(request):
+    try:
+        session = VotingSession.objects.latest('start_time')
+    except VotingSession.DoesNotExist:
+        # No session exists → redirect to results page
+        return redirect('results_page')
+
+    # -----------------------------
+    # If voting is ongoing → stay on results page
+    # -----------------------------
+    if session.is_open():
+        now = timezone.now()
+        session_end_datetime = timezone.make_aware(
+            datetime.combine(session.date, session.end_time)
+        )
+        remaining = session_end_datetime - now
+        hours = remaining.seconds // 3600
+        minutes = (remaining.seconds % 3600) // 60
+        seconds = remaining.seconds % 60
+        countdown = f"{hours}h {minutes}m {seconds}s remaining"
+
+        return render(request, 'vote/results.html', {
+            'results': [],  # optionally hide final results
+            'voting_message': "Voting is still ongoing. Final results are not ready.",
+            'countdown': countdown,
+            'session': session
+        })
+
+    # -----------------------------
+    # Voting is closed → handle comment submission
+    # -----------------------------
+    error_message = None
+    if request.method == "POST":
+        message = request.POST.get('message')
+        adm_number = request.POST.get('adm_number')
+
+        # Get logged-in user's admission number
+        try:
+            user_adm_number = request.user.schoolstudent.admission_number
+        except SchoolStudent.DoesNotExist:
+            user_adm_number = None
+
+        # Validate inputs
+        if not message or not adm_number:
+            error_message = "Please fill in all fields."
+        elif adm_number != user_adm_number:
+            error_message = "Invalid admission number. Please use your own admission number."
+        else:
+            # Save comment
+            Comment.objects.create(user=request.user, adm_number=adm_number, message=message)
+            return redirect('final_results_page')  # refresh page
+
+    # -----------------------------
+    # Build final results
+    # -----------------------------
+    positions = Position.objects.all()
+    final_results = []
+
+    for position in positions:
+        candidates = Candidate.objects.filter(position=position)
+        total_votes = Vote.objects.filter(candidate__position=position).count()
+
+        candidate_results = []
+        max_votes = 0
+
+        for candidate in candidates:
+            vote_count = Vote.objects.filter(candidate=candidate).count()
+            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
+            if vote_count > max_votes:
+                max_votes = vote_count
+
+            candidate_results.append({
+                'id': candidate.id,
+                'name': f"{candidate.name} & {candidate.deputy_name}" if candidate.deputy_name else candidate.name,
+                'party': candidate.party if candidate.party else '',
+                'votes': vote_count,
+                'percentage': round(percentage, 1),
+                'photo': candidate.photo.url if candidate.photo else None,
+            })
+
+        winners = [c for c in candidate_results if c['votes'] == max_votes] if max_votes > 0 else []
+
+        final_results.append({
+            'position': position.name,
+            'candidates': candidate_results,
+            'winners': winners
+        })
+
+    # Fetch all comments
+    comments = Comment.objects.all().order_by('-timestamp')
+
+    return render(request, 'vote/final_results.html', {
+        'final_results': final_results,
+        'session': session,
+        'comments': comments,
+        'error_message': error_message
+    })

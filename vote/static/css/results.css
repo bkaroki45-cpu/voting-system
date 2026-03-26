@@ -140,3 +140,51 @@ body {
         height: 140px;
     }
 }
+
+/* COUNTDOWN TIMER */
+.countdown-timer {
+    font-size: 2rem;             /* Bigger font */
+    font-weight: 700;            /* Bold */
+    color: #ff4c4c;              /* Bright red/orange for urgency */
+    text-align: center;
+    margin: 20px 0;
+    padding: 15px;
+    border: 2px solid #ff4c4c;   /* Border for emphasis */
+    border-radius: 12px;
+    background: rgba(255, 76, 76, 0.2); /* Semi-transparent red */
+    box-shadow: 0 0 15px #ff4c4c, 0 0 30px #ff6f6f; /* Glowing effect */
+    animation: pulse 1.5s infinite; /* Pulse effect for urgency */
+}
+
+/* PULSE ANIMATION */
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 15px #ff4c4c, 0 0 30px #ff6f6f; }
+    50% { transform: scale(1.05); box-shadow: 0 0 25px #ff4c4c, 0 0 40px #ff6f6f; }
+    100% { transform: scale(1); box-shadow: 0 0 15px #ff4c4c, 0 0 30px #ff6f6f; }
+}
+
+/* TIMER TEXT SPAN */
+.countdown-timer #time {
+    font-size: 2.5rem;          /* Extra big for the numbers */
+    font-weight: 800;
+    color: #ffeb3b;             /* Bright yellow for contrast */
+    display: inline-block;
+    text-shadow: 0 0 10px #ffeb3b, 0 0 20px #ffd700;
+}
+
+.alert-message {
+    background-color: #fff3cd;
+    color: #851704;
+    border: 1px solid #ffeeba;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.party-text{
+    color: #0072ff;
+    font-weight: bold;
+    font-size: 18px;
+}

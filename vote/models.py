@@ -33,10 +33,15 @@ class Candidate(models.Model):
     name = models.CharField(max_length=100)
     deputy_name = models.CharField(max_length=100, blank=True, null=True)
     photo = models.ImageField(upload_to='candidates/', blank=True, null=True)
+    party = models.CharField(max_length=100, blank=True, null=True)  # NEW FIELD
 
     def __str__(self):
         if self.deputy_name:
+            if self.party:
+                return f"{self.name} & {self.deputy_name} ({self.position.name}) - {self.party}"
             return f"{self.name} & {self.deputy_name} ({self.position.name})"
+        if self.party:
+            return f"{self.name} ({self.position.name}) - {self.party}"
         return f"{self.name} ({self.position.name})"
 
 
@@ -91,3 +96,13 @@ class VotingSession(models.Model):
 
     def __str__(self):
         return f"Voting on {self.date}: {self.start_time} - {self.end_time} | Active: {self.active}"
+    
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    adm_number = models.CharField(max_length=20)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.adm_number}"
