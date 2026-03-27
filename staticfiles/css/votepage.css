@@ -1,0 +1,192 @@
+/* -----------------------------
+   GLOBAL
+----------------------------- */
+body {
+    background: linear-gradient(135deg, #00c6ff, #0072ff); /* bright blue gradient */
+    font-family: 'Segoe UI', sans-serif;
+    color: #222;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+/* -----------------------------
+   CONTAINER
+----------------------------- */
+.container {
+    width: 95%;
+    max-width: 1100px;
+    background: rgba(255,255,255,0.95);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    color: #222;
+}
+
+/* -----------------------------
+   HEADINGS
+----------------------------- */
+h1.title {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 36px;
+    color: #0072ff;
+    text-shadow: 0 0 10px rgba(0,114,255,0.5);
+}
+
+/* -----------------------------
+   COUNTDOWN TIMER
+----------------------------- */
+.countdown-timer {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ff6a00;
+    text-align: center;
+    margin: 15px 0 25px 0;
+    padding: 12px 20px;
+    border: 2px solid #ff6a00;
+    border-radius: 12px;
+    background: rgba(255,106,0,0.15);
+    box-shadow: 0 0 15px #ff6a00, 0 0 30px #ff9c33;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* -----------------------------
+   POSITION CARD
+----------------------------- */
+.position-card {
+    margin-bottom: 40px;
+    padding: 25px;
+    background: rgba(0,114,255,0.1);
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.position-card h2 {
+    margin-bottom: 25px;
+    font-size: 26px;
+    text-align: center;
+    color: #ff6a00;
+    text-shadow: 0 0 5px rgba(255,106,0,0.3);
+}
+
+/* -----------------------------
+   CANDIDATES GRID
+----------------------------- */
+.candidates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    justify-items: center;
+}
+
+/* -----------------------------
+   CANDIDATE CARD
+----------------------------- */
+.candidate-card {
+    position: relative;
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.candidate-card:hover {
+    transform: translateY(-5px) scale(1.03);
+    background: rgba(255,255,255,1);
+}
+
+/* Candidate image */
+.candidate-img img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #0072ff;
+    transition: all 0.3s ease;
+}
+
+/* Candidate info */
+.candidate-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #222;
+    margin-top: 10px;
+}
+
+.deputy-text {
+    font-size: 14px;
+    color: #555;
+}
+
+/* Radio button visible */
+.candidate-card input[type="radio"] {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    transform: scale(1.5);
+    cursor: pointer;
+}
+
+/* Highlight selected candidate */
+.candidate-card input[type="radio"]:checked ~ .candidate-img img {
+    border-color: #ff6a00;
+    box-shadow: 0 0 15px #ff6a00;
+}
+
+.candidate-card input[type="radio"]:checked ~ .candidate-info .candidate-name {
+    color: #ff6a00;
+    font-weight: bold;
+}
+
+/* -----------------------------
+   SUBMIT BUTTON
+----------------------------- */
+.btn-submit {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    font-size: 18px;
+    border-radius: 15px;
+    border: none;
+    background: linear-gradient(135deg, #0072ff, #00c6ff);
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    margin-top: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-submit:hover {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    transform: translateY(-3px);
+}
+
+.btn-submit:active {
+    transform: scale(0.97);
+}
+
+/* -----------------------------
+   RESPONSIVE
+----------------------------- */
+@media (max-width: 700px) {
+    .candidate-img img { width: 130px; height: 130px; }
+}
+
+@media (max-width: 500px) {
+    .candidate-img img { width: 110px; height: 110px; }
+}
+
+.party-text{
+    color: #0072ff;
+    font-weight: bold;
+    font-size: 18px;
+}
