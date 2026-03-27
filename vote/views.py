@@ -23,43 +23,63 @@ def home(request):
 def student_register(request):
     if request.method == "POST":
         form = StudentRegisterForm(request.POST)
+
         if form.is_valid():
-            full_name = form.cleaned_data['full_name'].strip()
+            # Convert full_name to uppercase to normalize
+            full_name_input = form.cleaned_data['full_name'].strip().upper()
             admission_number = form.cleaned_data['admission_number'].strip()
             password = form.cleaned_data['password1']
 
-            # Get the matching SchoolStudent (case-insensitive)
+            # 1. Check school records using uppercase comparison
             try:
                 school_student = SchoolStudent.objects.get(
-                    full_name__iexact=full_name,
+                    full_name__iexact=full_name_input,
                     admission_number=admission_number
                 )
             except SchoolStudent.DoesNotExist:
-                form.add_error(None, "Your details do not match school records.")
+                form.add_error(None, "Details do not match school records.")
                 return render(request, 'vote/register.html', {'form': form})
 
-            if school_student.user:
-                form.add_error(None, "This student has already registered.")
+            # 2. If already linked → already registered
+            if school_student.user is not None:
+                form.add_error(None, "Account already exists. Please login.")
                 return render(request, 'vote/register.html', {'form': form})
 
-            # Create User with unique username = admission_number
+            # 3. If user exists (even if not linked) → login instead
+            if User.objects.filter(username=admission_number).exists():
+                form.add_error(None, "Account already exists. Please login.")
+                return render(request, 'vote/register.html', {'form': form})
+
+            # 4. Create account (ONLY VALID CASE)
+            names = full_name_input.split()
+            first_name = names[0]
+            last_name = " ".join(names[1:]) if len(names) > 1 else ""
+
             user = User.objects.create_user(
                 username=admission_number,
                 password=password,
-                first_name=full_name.split()[0],
-                last_name=" ".join(full_name.split()[1:]) if len(full_name.split()) > 1 else "",
+                first_name=first_name,
+                last_name=last_name,
             )
 
-            # Link User to SchoolStudent
+            # ✅ Make sure user is active so visible in admin
+            user.is_active = True
+
+            # ✅ Optional: make user staff so visible in admin Users section
+            # user.is_staff = True  # uncomment if you want them to appear immediately in admin
+
+            user.save()
+
+            # 5. Link student → user
             school_student.user = user
-            school_student.imported = False
             school_student.save()
 
-            # Authenticate & login
+            # 6. Login
             user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
 
             return redirect('vote_page')
+
     else:
         form = StudentRegisterForm()
 
@@ -69,31 +89,27 @@ def student_register(request):
 # -----------------------------
 def student_login(request):
     if request.method == "POST":
-        admission_number = request.POST['admission_number']
-        password = request.POST['password']
+        admission_number = request.POST.get('admission_number', '').strip()
+        password = request.POST.get('password', '').strip()
+
+        # Check if user exists in the User table
+        if not User.objects.filter(username=admission_number).exists():
+            # User not registered yet
+            error = "You are not registered yet. Please register first."
+            return render(request, 'vote/login.html', {'error': error})
 
         # Authenticate
         user = authenticate(request, username=admission_number, password=password)
-
-        # Only allow login for manually registered students (imported=False)
         if user is not None:
-            try:
-                student = user.schoolstudent
-                if student.imported:
-                    # Imported student cannot login
-                    error = "You cannot login. Please register first."
-                    return render(request, 'vote/login.html', {'error': error})
-            except SchoolStudent.DoesNotExist:
-                # No SchoolStudent linked? Just block login
-                error = "Invalid user."
-                return render(request, 'vote/login.html', {'error': error})
-
+            # Login the user
             login(request, user)
             return redirect('vote_page')
         else:
-            error = "Invalid admission number or password"
+            # Wrong password
+            error = "Invalid admission number or password."
             return render(request, 'vote/login.html', {'error': error})
 
+    # GET request
     return render(request, 'vote/login.html')
 
 

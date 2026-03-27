@@ -6,9 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mathenge Technical Voting System</title>
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    
 </head>
 <body>
     <div class="container">
+        <!-- School Logo -->
+        <img src="{% static 'images/schoologo.png' %}" alt="School Logo" class="logo">
+
         <h1>Mathenge Technical Voting System</h1>
         <p>Vote for your preferred candidates securely and easily.</p>
         <a href="{% url 'register' %}" class="btn btn-register">Register</a>
