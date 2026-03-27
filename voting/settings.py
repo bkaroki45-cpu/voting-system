@@ -18,9 +18,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Use environment variable for SECRET_KEY in production
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key')  
 
+# Use environment variable for DEBUG in production
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['vote.onrender.com']  # Add your Render app URL
+# ------------------------------
+# Allowed hosts (Render fix)
+# ------------------------------
+ALLOWED_HOSTS = [
+    'voting-system-s9kz.onrender.com',  # Your actual Render app URL
+    '.onrender.com',                     # optional wildcard for subdomains
+]
 
 # ------------------------------
 # Application definition
@@ -97,14 +104,24 @@ USE_TZ = True
 # Static files (CSS, JS, Images)
 # ------------------------------
 STATIC_URL = '/static/'  
- # development
-STATIC_ROOT = BASE_DIR / 'staticfiles'   # production collectstatic
+STATIC_ROOT = BASE_DIR / 'staticfiles'   # For collectstatic in production
+# Include app static directories for development
+STATICFILES_DIRS = [
+    BASE_DIR / 'vote' / 'static',
+]
 
 # ------------------------------
 # Media files (uploads)
 # ------------------------------
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ------------------------------
+# CSRF Trusted Origins (for Render HTTPS)
+# ------------------------------
+CSRF_TRUSTED_ORIGINS = [
+    'https://voting-system-s9kz.onrender.com',
+]
 
 # ------------------------------
 # Authentication backends
