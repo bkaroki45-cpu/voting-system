@@ -41,7 +41,6 @@ class SchoolStudentAdmin(ImportExportModelAdmin):
 # -----------------------------
 @admin.action(description="Reset Election (delete all positions, candidates, votes, comments, sessions)")
 def reset_election(modeladmin, request, queryset):
-    Vote.objects.all().delete()
     Comment.objects.all().delete()
     Candidate.objects.all().delete()
     Position.objects.all().delete()
