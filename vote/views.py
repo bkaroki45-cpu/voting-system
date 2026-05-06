@@ -223,9 +223,8 @@ def final_results_page(request):
     # -----------------------------
     if session.is_open():
         now = timezone.now()
-        session_end_datetime = timezone.make_aware(
-            datetime.combine(session.date, session.end_time)
-        )
+        session_end_datetime = session.end_datetime
+        remaining = session_end_datetime - timezone.now()
         remaining = session_end_datetime - now
         hours = remaining.seconds // 3600
         minutes = (remaining.seconds % 3600) // 60
