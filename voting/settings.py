@@ -27,6 +27,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key')
 # Use environment variable for DEBUG in production
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+print("DATABASE_URL =", os.environ.get("DATABASE_URL"))
+
 # ------------------------------
 # Allowed hosts (Render fix)
 # ------------------------------
