@@ -82,7 +82,7 @@ class VotingSessionForm(forms.ModelForm):
 
     class Meta:
         model = VotingSession
-        fields = ['start_time', 'end_time', 'active']
+        fields = ['start_datetime', 'end_datetime', 'active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
