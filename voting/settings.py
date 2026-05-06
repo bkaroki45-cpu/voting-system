@@ -86,28 +86,17 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # Database
 # ------------------------------
-import os
 import dj_database_url
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-DATABASE_URL = os.getenv("DATABASE_URL")
+import os
 
 DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL or "",
+    'default': dj_database_url.config(
+        default=os.environ.get("DATABASE_URL"),
         conn_max_age=600,
-        ssl_require=False  # IMPORTANT for Render safety
+        ssl_require=True
     )
 }
 
-# HARD SAFETY FALLBACK (PREVENT CRASH)
-if not DATABASES["default"].get("ENGINE"):
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
 
 # ------------------------------
 # Password validation
