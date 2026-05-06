@@ -150,3 +150,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
+import cloudinary
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dzuh38gi6',
+    'API_KEY': '714246333249573',
+    'API_SECRET': 'PtxyBKuGTqxYSnLJ3i9kqjKpV3Q',
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
