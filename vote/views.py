@@ -32,11 +32,10 @@ def student_register(request):
             # 1. Check school records using uppercase comparison
             try:
                 school_student = SchoolStudent.objects.get(
-                    full_name__iexact=full_name_input,
-                    admission_number=admission_number
+                    admission_number=admission_number.strip()
                 )
             except SchoolStudent.DoesNotExist:
-                form.add_error(None, "Details do not match school records.")
+                form.add_error(None, "Admission number not found in school records.")
                 return render(request, 'vote/register.html', {'form': form})
 
             # 2. If already linked → already registered
