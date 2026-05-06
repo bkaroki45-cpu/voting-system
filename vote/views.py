@@ -135,6 +135,8 @@ def vote_page(request):
     if Vote.objects.filter(user=user).exists():
         return redirect('results_page')
 
+    positions = Position.objects.all()
+
     
 
     if request.method == "POST":
