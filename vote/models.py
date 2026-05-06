@@ -36,13 +36,17 @@ class Candidate(models.Model):
     party = models.CharField(max_length=100, blank=True, null=True)  # NEW FIELD
 
     def __str__(self):
+        position = self.position.name if self.position else "Unknown Position"
+    
         if self.deputy_name:
             if self.party:
-                return f"{self.name} & {self.deputy_name} ({self.position.name}) - {self.party}"
-            return f"{self.name} & {self.deputy_name} ({self.position.name})"
+                return f"{self.name} & {self.deputy_name} ({position}) - {self.party}"
+            return f"{self.name} & {self.deputy_name} ({position})"
+    
         if self.party:
-            return f"{self.name} ({self.position.name}) - {self.party}"
-        return f"{self.name} ({self.position.name})"
+            return f"{self.name} ({position}) - {self.party}"
+    
+        return f"{self.name} ({position})"
 
 
 # -----------------------------
@@ -58,7 +62,10 @@ class Vote(models.Model):
         unique_together = ('user', 'position')
 
     def __str__(self):
-        return f"{self.user.username} voted for {self.candidate.name} ({self.position.name})"
+        user = self.user.username if self.user else "Unknown User"
+        candidate = self.candidate.name if self.candidate else "Unknown Candidate"
+        position = self.position.name if self.position else "Unknown Position"
+        return f"{user} voted for {candidate} ({position})"
 
 
 # -----------------------------
