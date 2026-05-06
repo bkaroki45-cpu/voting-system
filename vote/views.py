@@ -49,9 +49,12 @@ def student_register(request):
                 return render(request, 'vote/register.html', {'form': form})
 
             # 4. Create account (ONLY VALID CASE)
-            names = full_name_input.split()
+            full_name = school_student.full_name.strip()
+            names = full_name.split()
+            
             first_name = names[0]
             last_name = " ".join(names[1:]) if len(names) > 1 else ""
+                        last_name = " ".join(names[1:]) if len(names) > 1 else ""
 
             user = User.objects.create_user(
                 username=admission_number,
