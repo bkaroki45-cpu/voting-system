@@ -75,27 +75,20 @@ class SchoolStudent(models.Model):
     
 
 
+from django.db import models
+from django.utils import timezone
+
 class VotingSession(models.Model):
-    date = models.DateField(default=timezone.localdate)  # voting day
-    start_time = models.TimeField()  # e.g., 9:30 AM
-    end_time = models.TimeField()    # e.g., 3:30 PM
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     active = models.BooleanField(default=False)
 
     def is_open(self):
-        now = timezone.localtime()
-        if not self.active:
-            return False
-        # Combine date with start/end time for comparison
-        start_dt = timezone.make_aware(
-            timezone.datetime.combine(self.date, self.start_time)
-        )
-        end_dt = timezone.make_aware(
-            timezone.datetime.combine(self.date, self.end_time)
-        )
-        return start_dt <= now <= end_dt
+        now = timezone.now()
+        return self.active and self.start_datetime <= now <= self.end_datetime
 
     def __str__(self):
-        return f"Voting on {self.date}: {self.start_time} - {self.end_time} | Active: {self.active}"
+        return f"{self.start_datetime} → {self.end_datetime} | Active: {self.active}"
     
 
 class Comment(models.Model):
