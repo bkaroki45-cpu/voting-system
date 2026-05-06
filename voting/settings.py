@@ -125,8 +125,8 @@ STATICFILES_DIRS = [
 # ------------------------------
 # Media files (uploads)
 # ------------------------------
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+#MEDIA_URL = '/media/'
+#MEDIA_ROOT = BASE_DIR / 'media'
 
 # ------------------------------
 # CSRF Trusted Origins (for Render HTTPS)
