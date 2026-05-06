@@ -114,30 +114,28 @@ def student_login(request):
     return render(request, 'vote/login.html')
 
 
+
+
+
 @login_required
 def vote_page(request):
     user = request.user
 
-    # Get the latest active voting session
     try:
         session = VotingSession.objects.filter(active=True).latest('start_datetime')
     except VotingSession.DoesNotExist:
         session = None
 
-    # Block voting if session is inactive or closed
     if not session or not session.is_open():
         return render(request, 'vote/closed.html', {
             'message': 'Voting is currently closed.',
             'session': session
         })
 
-    # Check if user has already voted
     if Vote.objects.filter(user=user).exists():
         return redirect('results_page')
 
     positions = Position.objects.all()
-
-    
 
     if request.method == "POST":
         for position in positions:
@@ -147,13 +145,12 @@ def vote_page(request):
                 Vote.objects.create(user=user, position=position, candidate=candidate)
         return redirect('results_page')
 
-    # Combine session date + end_time for countdown
-    session_end = session.end_datetime if session else None
+    session_end = timezone.localtime(session.end_datetime)
 
     return render(request, 'vote/vote_page.html', {
         'positions': positions,
         'session': session,
-        'session_end': session_end  # Pass full datetime to template
+        'session_end': session_end
     })
 
 
