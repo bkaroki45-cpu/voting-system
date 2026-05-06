@@ -120,7 +120,7 @@ def vote_page(request):
 
     # Get the latest active voting session
     try:
-        session = VotingSession.objects.filter(active=True).latest('start_time')
+        session = VotingSession.objects.filter(active=True).latest('start_datetime')
     except VotingSession.DoesNotExist:
         session = None
 
@@ -165,7 +165,7 @@ def results_page(request):
 
     # Get latest session
     try:
-        session = VotingSession.objects.latest('start_time')
+        session = VotingSession.objects.latest('start_datetime')
     except VotingSession.DoesNotExist:
         session = None
 
@@ -213,7 +213,7 @@ def close(request):
 @login_required
 def final_results_page(request):
     try:
-        session = VotingSession.objects.latest('start_time')
+        session = VotingSession.objects.latest('start_datetime')
     except VotingSession.DoesNotExist:
         # No session exists → redirect to results page
         return redirect('results_page')
