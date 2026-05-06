@@ -195,11 +195,8 @@ def results_page(request):
     session_timestamp = None
     session_end_datetime = None
     if session:
-        # Combine session.date and end_time to a full datetime
-        session_end_datetime = timezone.make_aware(
-            datetime.combine(session.date, session.end_time)
-        )
-        session_timestamp = int(session_end_datetime.timestamp() * 1000)  # JS needs ms
+        session_end_datetime = session.end_datetime
+        session_timestamp = int(session_end_datetime.timestamp() * 1000)
 
     return render(request, 'vote/results.html', {
         'results': results,
