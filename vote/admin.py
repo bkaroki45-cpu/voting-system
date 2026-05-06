@@ -39,16 +39,15 @@ class SchoolStudentAdmin(ImportExportModelAdmin):
 # -----------------------------
 # VotingSession admin with reset action
 # -----------------------------
-@admin.action(description="Reset Election (delete all positions, candidates, votes, comments, sessions)")
+@admin.action(description="Reset Election")
 def reset_election(modeladmin, request, queryset):
+    Vote.objects.all().delete()
     Comment.objects.all().delete()
     Candidate.objects.all().delete()
     Position.objects.all().delete()
     VotingSession.objects.all().delete()
-    messages.success(
-        request,
-        "Election has been reset. All positions, candidates, votes, comments, and sessions cleared."
-    )
+
+    messages.success(request, "Election reset successfully.")
 
 
 @admin.register(VotingSession)
