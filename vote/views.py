@@ -146,11 +146,7 @@ def vote_page(request):
         return redirect('results_page')
 
     # Combine session date + end_time for countdown
-    session_end = None
-    if session:
-        session_end = timezone.make_aware(
-            timezone.datetime.combine(session.date, session.end_time)
-        )
+    session_end = session.end_datetime if session else None
 
     return render(request, 'vote/vote_page.html', {
         'positions': positions,
