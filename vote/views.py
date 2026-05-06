@@ -25,8 +25,7 @@ def student_register(request):
         form = StudentRegisterForm(request.POST)
 
         if form.is_valid():
-            # Convert full_name to uppercase to normalize
-            full_name_input = form.cleaned_data['full_name'].strip().upper()
+            
             admission_number = form.cleaned_data['admission_number'].strip()
             password = form.cleaned_data['password1']
 
