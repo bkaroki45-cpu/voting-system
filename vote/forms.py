@@ -61,7 +61,7 @@ from .models import VotingSession
 from django.utils.timezone import localtime
 
 class VotingSessionForm(forms.ModelForm):
-    start_time = forms.DateTimeField(
+    start_datetime = forms.DateTimeField(
         widget=forms.DateTimeInput(
             attrs={
                 'type': 'datetime-local',  # allows typing manually
@@ -70,7 +70,7 @@ class VotingSessionForm(forms.ModelForm):
             format='%Y-%m-%dT%H:%M'       # HTML5 format
         )
     )
-    end_time = forms.DateTimeField(
+    end_datetime = forms.DateTimeField(
         widget=forms.DateTimeInput(
             attrs={
                 'type': 'datetime-local',
