@@ -54,7 +54,7 @@ def reset_election(modeladmin, request, queryset):
 
 @admin.register(VotingSession)
 class VotingSessionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'active')
+    list_display = ('id',)
 
 
 # -----------------------------
