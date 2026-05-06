@@ -26,27 +26,23 @@
             </ul>
         </div>
         {% endif %}
-        <p><strong>Note:</strong> Please enter your full name and adm_number exactly as it appears on your school ID.</p>
+        <p><strong>Note:</strong> Enter your admission number to register.</p>
 
         <form method="POST">
             {% csrf_token %}
             
-            <!-- Full Name -->
-            <label for="{{ form.full_name.id_for_label }}">Full Name</label>
-            {{ form.full_name }}
-
             <!-- Admission Number -->
             <label for="{{ form.admission_number.id_for_label }}">Admission Number</label>
             {{ form.admission_number }}
-
+        
             <!-- Password -->
             <label for="{{ form.password1.id_for_label }}">Password</label>
             {{ form.password1 }}
-
+        
             <!-- Confirm Password -->
             <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
             {{ form.password2 }}
-
+        
             <button type="submit">Register</button>
         </form>
 
