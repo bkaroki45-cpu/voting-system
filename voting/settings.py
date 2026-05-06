@@ -84,21 +84,18 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # Database
 # ------------------------------
-import dj_database_url
-import os
-
-import dj_database_url
-
 
 
 import dj_database_url
 import os
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
+    'default': dj_database_url.parse(
+        DATABASE_URL if DATABASE_URL else "sqlite:///db.sqlite3",
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=bool(DATABASE_URL)
     )
 }
 
