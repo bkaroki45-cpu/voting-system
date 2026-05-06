@@ -15,8 +15,8 @@
         {% if session %}
             <p>Voting was scheduled from:</p>
             <p>
-                <strong>Start:</strong> {{ session.start_time|time:"h:i A" }} <br>
-                <strong>End:</strong> {{ session.end_time|time:"h:i A" }}
+                <strong>Start:</strong> {{ session.start_datetime|time:"h:i A" }} <br>
+                <strong>End:</strong> {{ session.end_datetime|time:"h:i A" }}
             </p>
             <p><em>On the date:</em> {{ session.date|date:"D, d M Y" }}</p>
         {% endif %}
