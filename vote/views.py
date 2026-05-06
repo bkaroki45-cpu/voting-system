@@ -54,7 +54,7 @@ def student_register(request):
             
             first_name = names[0]
             last_name = " ".join(names[1:]) if len(names) > 1 else ""
-                        last_name = " ".join(names[1:]) if len(names) > 1 else ""
+            last_name = " ".join(names[1:]) if len(names) > 1 else ""
 
             user = User.objects.create_user(
                 username=admission_number,
