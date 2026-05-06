@@ -89,5 +89,5 @@ class VotingSessionForm(forms.ModelForm):
         # Pre-fill with current local time (Kenyan)
         if not self.instance.pk:
             now = localtime()
-            self.fields['start_time'].initial = now.strftime('%Y-%m-%dT%H:%M')
-            self.fields['end_time'].initial = (now + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M')
+            self.fields['start_datetime'].initial = now.strftime('%Y-%m-%dT%H:%M')
+            self.fields['end_datetime'].initial = (now + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M')
