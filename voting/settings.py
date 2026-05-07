@@ -19,7 +19,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key')
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "voting-system-s9kz.onrender.com"
+]
 
 # ------------------------------
 # Applications
