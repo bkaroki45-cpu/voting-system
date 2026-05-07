@@ -83,20 +83,11 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # Database
 # ------------------------------
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-# Ensure DATABASE_URL is a string, not bytes
-if DATABASE_URL and isinstance(DATABASE_URL, bytes):
-    DATABASE_URL = DATABASE_URL.decode()
-
 DATABASES = {
-    "default": dj_database_url.config(
-        default=DATABASE_URL or "sqlite:///db.sqlite3",
-        conn_max_age=600,
-        ssl_require=False  # True only if you need SSL in production
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL')
     )
 }
-
 # ------------------------------
 # Password validation
 # ------------------------------
