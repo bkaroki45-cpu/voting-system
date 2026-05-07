@@ -86,13 +86,15 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # Database
 # ------------------------------
-import dj_database_url
 import os
+import dj_database_url
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL environment variable not set!")
 
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL")
-    )
+    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 }
 
 # ------------------------------
