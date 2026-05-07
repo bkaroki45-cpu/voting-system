@@ -22,7 +22,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
-    "voting-system-s9kz.onrender.com"
+    ".onrender.com"
 ]
 
 # ------------------------------
