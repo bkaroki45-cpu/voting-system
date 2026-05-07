@@ -94,7 +94,8 @@ DATABASES = {
         conn_max_age=600,
         ssl_require=False
     )
-}---------------------------
+}
+#---------------------------
 # Password validation
 # ------------------------------
 AUTH_PASSWORD_VALIDATORS = [
