@@ -54,6 +54,12 @@ class StudentLoginForm(AuthenticationForm):
 # -----------------------------
 # Voting Session Form
 # -----------------------------
+from django import forms
+from django.utils.timezone import localtime
+from datetime import timedelta
+from .models import VotingSession
+
+
 class VotingSessionForm(forms.ModelForm):
 
     start_datetime = forms.DateTimeField(
@@ -79,7 +85,21 @@ class VotingSessionForm(forms.ModelForm):
 
         if not self.instance.pk:
             now = localtime()
+
             self.fields['start_datetime'].initial = now.strftime('%Y-%m-%dT%H:%M')
             self.fields['end_datetime'].initial = (
                 now + timedelta(hours=1)
             ).strftime('%Y-%m-%dT%H:%M')
+
+    # 🔥 ADD THIS (critical fix)
+    def clean(self):
+            cleaned_data = super().clean()
+
+            start = cleaned_data.get("start_datetime")
+            end = cleaned_data.get("end_datetime")
+
+            if start and end:
+                if end <= start:
+                    raise forms.ValidationError("End time must be after start time.")
+
+            return cleaned_data

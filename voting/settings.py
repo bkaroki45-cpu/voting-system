@@ -1,12 +1,11 @@
 """
-Django settings for voting project (Render-ready).
+Django settings for voting project (Render-ready + Cloudinary media).
 """
 
 import os
 from pathlib import Path
-import cloudinary
-from cloudinary_storage.storage import MediaCloudinaryStorage
 import dj_database_url
+import cloudinary
 
 # ------------------------------
 # Base directory
@@ -20,9 +19,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key')
 
 DEBUG = True
 
-# ------------------------------
-# Allowed hosts (Render fix)
-# ------------------------------
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 # ------------------------------
@@ -39,6 +35,7 @@ INSTALLED_APPS = [
     'import_export',
     'vote.apps.VoteConfig',
 
+    # Cloudinary (MEDIA STORAGE)
     'cloudinary',
     'cloudinary_storage',
 ]
@@ -60,6 +57,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'voting.urls'
 
+# ------------------------------
+# Templates
+# ------------------------------
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -78,19 +78,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'voting.wsgi.application'
 
 # ------------------------------
-# DATABASE (FIXED - IMPORTANT)
+# DATABASE (POSTGRES ON RENDER / SQLITE LOCAL FALLBACK)
 # ------------------------------
-
-
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=False
     )
 }
-#---------------------------
-# Password validation
+
+# ------------------------------
+# PASSWORD VALIDATION
 # ------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -100,7 +98,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ------------------------------
-# Internationalization
+# INTERNATIONALIZATION
 # ------------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Africa/Nairobi'
@@ -108,7 +106,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ------------------------------
-# Static files
+# STATIC FILES
 # ------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -120,21 +118,22 @@ STATICFILES_DIRS = [
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ------------------------------
-# Cloudinary (SECURE FIX)
+# MEDIA (CLOUDINARY - NO LOCAL MEDIA ISSUES)
 # ------------------------------
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUD_NAME'),
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
 cloudinary.config(
-    cloud_name=os.environ.get('CLOUD_NAME'),
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
     api_key=os.environ.get('CLOUDINARY_API_KEY'),
     api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
 )
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # ------------------------------
 # CSRF trusted origins
@@ -144,7 +143,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # ------------------------------
-# Authentication backends
+# AUTH BACKENDS
 # ------------------------------
 AUTHENTICATION_BACKENDS = [
     'vote.backends.AdmissionNumberBackend',
@@ -152,7 +151,6 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # ------------------------------
-# Default PK
+# DEFAULT PK
 # ------------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-print("DATABASE_URL =", os.environ.get("DATABASE_URL"))

@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 # -----------------------------
 # 1️⃣ Custom Student Model (for manually registered users)
@@ -85,6 +86,7 @@ class SchoolStudent(models.Model):
 from django.db import models
 from django.utils import timezone
 
+
 class VotingSession(models.Model):
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
@@ -92,12 +94,18 @@ class VotingSession(models.Model):
 
     def is_open(self):
         now = timezone.now()
-        return self.active and self.start_datetime <= now <= self.end_datetime
+        return (
+            self.active and
+            self.start_datetime <= now <= self.end_datetime
+        )
 
     def __str__(self):
         return f"{self.start_datetime} → {self.end_datetime} | Active: {self.active}"
     
-
+    def clean(self):
+        if self.end_datetime <= self.start_datetime:
+            raise ValidationError("End must be after start")
+        
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     adm_number = models.CharField(max_length=20)

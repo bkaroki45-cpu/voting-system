@@ -117,16 +117,28 @@ def student_login(request):
 
 
 
+from django.utils import timezone
+
 @login_required
 def vote_page(request):
     user = request.user
 
-    try:
-        session = VotingSession.objects.filter(active=True).latest('start_datetime')
-    except VotingSession.DoesNotExist:
-        session = None
+    session = VotingSession.objects.filter(active=True)\
+        .order_by('-start_datetime').first()
 
-    if not session or not session.is_open():
+    now = timezone.now()
+    print("NOW:", now)
+
+    if not session:
+        return render(request, 'vote/closed.html', {
+            'message': 'No active voting session found.',
+            'session': None
+        })
+
+    print("START:", session.start_datetime)
+    print("END:", session.end_datetime)
+
+    if not session.is_open():
         return render(request, 'vote/closed.html', {
             'message': 'Voting is currently closed.',
             'session': session
@@ -145,16 +157,11 @@ def vote_page(request):
                 Vote.objects.create(user=user, position=position, candidate=candidate)
         return redirect('results_page')
 
-    session_end = timezone.localtime(session.end_datetime)
-
     return render(request, 'vote/vote_page.html', {
         'positions': positions,
         'session': session,
-        'session_end': session_end
+        'session_end': session.end_datetime
     })
-
-
-
 
 
 @login_required
