@@ -83,12 +83,11 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # Database
 # ------------------------------
+import dj_database_url
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
-    )
-}
-# ------------------------------
+    'default': dj_database_url.config(default='sqlite:///db.sqlite3')
+}# ------------------------------
 # Password validation
 # ------------------------------
 AUTH_PASSWORD_VALIDATORS = [
