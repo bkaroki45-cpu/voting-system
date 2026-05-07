@@ -1,6 +1,6 @@
 ﻿asgiref==3.11.1
 diff-match-patch==20241021
-Django==6.0.3
+Django==5.2.5
 django-import-export==4.4.0
 gunicorn==25.3.0
 packaging==26.0
