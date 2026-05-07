@@ -89,20 +89,13 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 import os
 import dj_database_url
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise Exception("DATABASE_URL is not set!")
-
-# FIX: handle accidental bytes (your current error)
-if isinstance(DATABASE_URL, (bytes, bytearray)):
-    DATABASE_URL = DATABASE_URL.decode()
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
+    "default": dj_database_url.config(
+        default=DATABASE_URL or "sqlite:///db.sqlite3",
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=False
     )
 }
 # ------------------------------
