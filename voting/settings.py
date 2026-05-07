@@ -168,4 +168,4 @@ cloudinary.config(
 )
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
+print("DATABASE_URL from environment:", DATABASE_URL)
