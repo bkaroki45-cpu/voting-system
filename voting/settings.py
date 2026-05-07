@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ------------------------------
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key')
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = True
 
 # ------------------------------
 # Allowed hosts (Render fix)
@@ -80,8 +80,7 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # DATABASE (FIXED - IMPORTANT)
 # ------------------------------
-import dj_database_url
-import os
+
 
 DATABASES = {
     'default': dj_database_url.config(
