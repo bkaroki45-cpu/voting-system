@@ -94,7 +94,7 @@ if not DATABASE_URL:
     raise Exception("DATABASE_URL environment variable not set!")
 
 DATABASES = {
-    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
 }
 
 # ------------------------------
