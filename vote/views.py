@@ -218,98 +218,96 @@ def close(request):
 
 @login_required
 def final_results_page(request):
-    try:
-        session = VotingSession.objects.latest('start_datetime')
-    except VotingSession.DoesNotExist:
-        # No session exists → redirect to results page
+
+    # -----------------------------
+    # Get latest session safely
+    # -----------------------------
+    session = VotingSession.objects.order_by('-start_datetime').first()
+
+    if not session:
         return redirect('results_page')
 
     # -----------------------------
-    # If voting is ongoing → stay on results page
+    # If voting still open → show message
     # -----------------------------
     if session.is_open():
-        now = timezone.now()
-        session_end_datetime = session.end_datetime
-        remaining = session_end_datetime - timezone.now()
-        remaining = session_end_datetime - now
-        hours = remaining.seconds // 3600
-        minutes = (remaining.seconds % 3600) // 60
-        seconds = remaining.seconds % 60
-        countdown = f"{hours}h {minutes}m {seconds}s remaining"
-
         return render(request, 'vote/results.html', {
-            'results': [],  # optionally hide final results
             'voting_message': "Voting is still ongoing. Final results are not ready.",
-            'countdown': countdown,
             'session': session
         })
 
     # -----------------------------
-    # Voting is closed → handle comment submission
+    # Handle comments
     # -----------------------------
     error_message = None
+
     if request.method == "POST":
         message = request.POST.get('message')
         adm_number = request.POST.get('adm_number')
 
-        # Get logged-in user's admission number
         try:
             user_adm_number = request.user.schoolstudent.admission_number
-        except SchoolStudent.DoesNotExist:
+        except:
             user_adm_number = None
 
-        # Validate inputs
         if not message or not adm_number:
-            error_message = "Please fill in all fields."
+            error_message = "Please fill all fields."
         elif adm_number != user_adm_number:
-            error_message = "Invalid admission number. Please use your own admission number."
+            error_message = "Invalid admission number."
         else:
-            # Save comment
-            Comment.objects.create(user=request.user, adm_number=adm_number, message=message)
-            return redirect('final_results_page')  # refresh page
+            Comment.objects.create(
+                user=request.user,
+                adm_number=adm_number,
+                message=message
+            )
+            return redirect('final_results_page')
 
     # -----------------------------
-    # Build final results
+    # BUILD RESULTS (FIXED LOGIC)
     # -----------------------------
-    positions = Position.objects.all()
     final_results = []
 
-    for position in positions:
+    for position in Position.objects.all():
+
         candidates = Candidate.objects.filter(position=position)
-        total_votes = Vote.objects.filter(candidate__position=position).count()
 
         candidate_results = []
+
         max_votes = 0
 
         for candidate in candidates:
             vote_count = Vote.objects.filter(candidate=candidate).count()
-            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
-            if vote_count > max_votes:
-                max_votes = vote_count
+
+            max_votes = max(max_votes, vote_count)
+
+            total_votes = Vote.objects.filter(candidate__position=position).count()
+
+            percentage = (vote_count / total_votes * 100) if total_votes else 0
 
             candidate_results.append({
-                'id': candidate.id,
-                'name': f"{candidate.name} & {candidate.deputy_name}" if candidate.deputy_name else candidate.name,
-                'party': candidate.party if candidate.party else '',
-                'votes': vote_count,
-                'percentage': round(percentage, 1),
-                'photo': candidate.photo.url if candidate.photo else None,
+                "id": candidate.id,
+                "name": candidate.name,
+                "party": candidate.party or "",
+                "votes": vote_count,
+                "percentage": round(percentage, 1),
+                "photo": candidate.photo.url if candidate.photo else None,
             })
 
-        winners = [c for c in candidate_results if c['votes'] == max_votes] if max_votes > 0 else []
+        winners = [
+            c for c in candidate_results if c["votes"] == max_votes
+        ] if max_votes > 0 else []
 
         final_results.append({
-            'position': position.name,
-            'candidates': candidate_results,
-            'winners': winners
+            "position": position.name,
+            "candidates": candidate_results,
+            "winners": winners
         })
 
-    # Fetch all comments
     comments = Comment.objects.all().order_by('-timestamp')
 
     return render(request, 'vote/final_results.html', {
-        'final_results': final_results,
-        'session': session,
-        'comments': comments,
-        'error_message': error_message
+        "final_results": final_results,
+        "comments": comments,
+        "error_message": error_message,
+        "session": session
     })
