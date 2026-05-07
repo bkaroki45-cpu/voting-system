@@ -33,8 +33,8 @@ print("DATABASE_URL =", os.environ.get("DATABASE_URL"))
 # Allowed hosts (Render fix)
 # ------------------------------
 ALLOWED_HOSTS = [
-    'voting-system-s9kz.onrender.com',  # Your actual Render app URL
-    '.onrender.com',                     # optional wildcard for subdomains
+    "voting-system-s9kz.onrender.com",
+    ".onrender.com",
 ]
 
 # ------------------------------
