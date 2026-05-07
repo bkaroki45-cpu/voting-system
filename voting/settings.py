@@ -89,14 +89,22 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 import os
 import dj_database_url
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 if not DATABASE_URL:
-    raise Exception("DATABASE_URL environment variable not set!")
+    raise Exception("DATABASE_URL is not set!")
+
+# FIX: handle accidental bytes (your current error)
+if isinstance(DATABASE_URL, (bytes, bytearray)):
+    DATABASE_URL = DATABASE_URL.decode()
 
 DATABASES = {
-    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+    "default": dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
-
 # ------------------------------
 # Password validation
 # ------------------------------
