@@ -18,17 +18,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ------------------------------
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key')
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # ------------------------------
 # Allowed hosts (Render fix)
 # ------------------------------
-ALLOWED_HOSTS = [
-    "voting-system-s9kz.onrender.com",
-    ".onrender.com",
-    "localhost",
-    "127.0.0.1",
-]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 # ------------------------------
 # Applications
@@ -90,10 +85,7 @@ import os
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get(
-            'DATABASE_URL',
-            'sqlite:///db.sqlite3'
-        ),
+        default='sqlite:///db.sqlite3',
         conn_max_age=600,
         ssl_require=False
     )
