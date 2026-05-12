@@ -332,8 +332,6 @@ from .models import SchoolStudent, Position, Candidate, Vote
 @csrf_exempt
 def ussd_callback(request):
 
-    start = time.time()
-
     text = request.POST.get('text', '').strip()
     phone = request.POST.get('phoneNumber', '')
 
@@ -344,17 +342,17 @@ def ussd_callback(request):
     step3 = parts[2] if len(parts) > 2 else None
     step4 = parts[3] if len(parts) > 3 else None
 
-    # ==================================================
+    # =========================
     # STEP 1: ENTER ADMISSION
-    # ==================================================
+    # =========================
     if text == "":
         return HttpResponse("CON Enter Admission Number", "text/plain")
 
     student = SchoolStudent.objects.filter(admission_number=adm).first() if adm else None
 
-    # ==================================================
+    # =========================
     # STEP 2: ADMISSION CHECK
-    # ==================================================
+    # =========================
     if len(parts) == 1:
 
         if not student:
@@ -365,28 +363,34 @@ def ussd_callback(request):
 
         return HttpResponse("CON Enter PIN", "text/plain")
 
-    # ==================================================
+    # =========================
     # STEP 3: REGISTER / LOGIN
-    # ==================================================
+    # =========================
     if len(parts) == 2:
 
         if not student:
             return HttpResponse("END Invalid admission number", "text/plain")
 
+        # 🔥 PIN VALIDATION (MUST BE 4 DIGITS)
+        if not pin.isdigit() or len(pin) != 4:
+            return HttpResponse("END PIN must be 4 digits", "text/plain")
+
+        # REGISTER PIN
         if not student.is_ussd_registered:
             student.pin = make_password(pin)
             student.is_ussd_registered = True
             student.save()
             return HttpResponse("END PIN created. Dial again.", "text/plain")
 
+        # LOGIN
         if not check_password(pin, student.pin):
             return HttpResponse("END Wrong PIN", "text/plain")
 
         return HttpResponse(f"CON Welcome {student.full_name}\n1. Vote", "text/plain")
 
-    # ==================================================
+    # =========================
     # STEP 4: POSITIONS
-    # ==================================================
+    # =========================
     if len(parts) == 3:
 
         if not student or not check_password(pin, student.pin):
@@ -400,9 +404,9 @@ def ussd_callback(request):
 
         return HttpResponse(msg, "text/plain")
 
-    # ==================================================
+    # =========================
     # STEP 5: CANDIDATES
-    # ==================================================
+    # =========================
     if len(parts) == 4:
 
         if not student or not check_password(pin, student.pin):
@@ -423,9 +427,9 @@ def ussd_callback(request):
 
         return HttpResponse(msg, "text/plain")
 
-    # ==================================================
+    # =========================
     # STEP 6: VOTE
-    # ==================================================
+    # =========================
     if len(parts) >= 5:
 
         if not student or not check_password(pin, student.pin):
@@ -457,5 +461,4 @@ def ussd_callback(request):
 
         return HttpResponse(f"END Vote submitted for {candidate.name}", "text/plain")
 
-    # ==================================================
     return HttpResponse("END Invalid request", "text/plain")
