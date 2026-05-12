@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import make_password, check_password
 
 # -----------------------------
 # 1️⃣ Custom Student Model (for manually registered users)
@@ -99,7 +100,13 @@ class SchoolStudent(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     full_name = models.CharField(max_length=150)
     admission_number = models.CharField(max_length=50, unique=True)
-    imported = models.BooleanField(default=False)  # True if imported via CSV
+
+    imported = models.BooleanField(default=False)
+
+    # 🔥 ADD THESE FOR USSD
+    pin = models.CharField(max_length=4, null=True, blank=True)
+    is_ussd_registered = models.BooleanField(default=False)
+    
 
     def __str__(self):
         return f"{self.full_name} ({self.admission_number})"
