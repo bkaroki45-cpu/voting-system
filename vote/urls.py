@@ -9,4 +9,5 @@ urlpatterns = [
     path('results/', views.results_page, name='results_page'),
     path('close/', views.close, name='close'),
     path('final_results/', views.final_results_page, name='final_results_page'),
+    path('ussd/', views.ussd_callback, name='ussd'),
 ]

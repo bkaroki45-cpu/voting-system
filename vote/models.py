@@ -54,19 +54,33 @@ class Candidate(models.Model):
 # 4️⃣ Votes
 # -----------------------------
 class Vote(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    phone = models.CharField(max_length=20, null=True, blank=True)
+
     position = models.ForeignKey(Position, on_delete=models.CASCADE)
+
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE)
+
     voted_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'position')
 
     def __str__(self):
-        user = self.user.username if self.user else "Unknown User"
-        candidate = self.candidate.name if self.candidate else "Unknown Candidate"
-        position = self.position.name if self.position else "Unknown Position"
-        return f"{user} voted for {candidate} ({position})"
+        if self.user:
+            voter = self.user.username
+        elif self.phone:
+            voter = self.phone
+        else:
+            voter = "Unknown"
+
+        return f"{voter} voted for {self.candidate.name}"
 
 
 # -----------------------------
@@ -114,3 +128,4 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.adm_number}"
+

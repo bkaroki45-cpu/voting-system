@@ -311,3 +311,47 @@ def final_results_page(request):
         "error_message": error_message,
         "session": session
     })
+
+
+from django.http import HttpResponse
+from .models import Vote
+
+def ussd_callback(request):
+
+    session_id = request.POST.get('sessionId')
+    service_code = request.POST.get('serviceCode')
+    phone_number = request.POST.get('phoneNumber')
+    text = request.POST.get('text')
+
+    response = ""
+
+    if text == "":
+
+        response = "CON Welcome to E-Voting\n"
+        response += "1. Vote"
+
+    elif text == "1":
+
+        response = "CON Select Candidate\n"
+        response += "1. Brian\n"
+        response += "2. John"
+
+    elif text == "1*1":
+
+        Vote.objects.create(
+            phone=phone_number,
+            candidate="Brian"
+        )
+
+        response = "END Vote submitted for Brian"
+
+    elif text == "1*2":
+
+        Vote.objects.create(
+            phone=phone_number,
+            candidate="John"
+        )
+
+        response = "END Vote submitted for John"
+
+    return HttpResponse(response, content_type='text/plain')
