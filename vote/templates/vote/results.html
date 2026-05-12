@@ -8,50 +8,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
+
 <div class="container">
+
     <h1 class="title">🗳️ Election Results</h1>
 
     {% if voting_message %}
-    <div class="alert-message">
-        ⚠️ {{ voting_message }}
-        {% if countdown %}
-            <br>⏱ {{ countdown }}
-        {% endif %}
-    </div>
+        <div class="alert-message">
+            ⚠️ {{ voting_message }}
+        </div>
     {% endif %}
 
-    {% if session %}
+    {% if session_end %}
     <div id="countdown" class="countdown-timer">
         Voting ends in: <span id="time"></span>
     </div>
 
     <script>
-        const endTime = {{ session_timestamp|default:"null" }};
+        const endTime = new Date("{{ session_end|date:'c' }}").getTime();
 
-        if (endTime) {
-            const countdown = setInterval(function() {
-                const now = new Date().getTime();
-                const distance = endTime - now;
+        const countdown = setInterval(function () {
+            const now = new Date().getTime();
+            const distance = endTime - now;
 
-                if (distance <= 0) {
-                    clearInterval(countdown);
-                    document.getElementById("time").innerHTML = "Voting is closed";
-                } else {
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000*60*60));
-                    const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
-                    const seconds = Math.floor((distance % (1000*60)) / 1000);
-                    document.getElementById("time").innerHTML = hours + "h " + minutes + "m " + seconds + "s";
-                }
-            }, 1000);
-        }
+            if (distance <= 0) {
+                clearInterval(countdown);
+                document.getElementById("time").innerHTML = "Voting is closed";
+            } else {
+                const hours = Math.floor((distance % (1000*60*60*24))/(1000*60*60));
+                const minutes = Math.floor((distance % (1000*60*60))/(1000*60));
+                const seconds = Math.floor((distance % (1000*60))/1000);
+
+                document.getElementById("time").innerHTML =
+                    hours + "h " + minutes + "m " + seconds + "s";
+            }
+        }, 1000);
     </script>
     {% endif %}
 
     {% if results %}
+
         {% for position in results %}
         <div class="position-card">
+
             <h2>{{ position.position }}</h2>
+
             <div class="candidates">
+
                 {% for candidate in position.candidates %}
                 <div class="candidate-card">
 
@@ -61,9 +64,10 @@
                         <img src="{% static 'images/default.png' %}" alt="default">
                     {% endif %}
 
-                    <h3>{{ candidate.name }}
+                    <h3>
+                        {{ candidate.name }}
                         {% if candidate.party %}
-                            <p class="party-text">party: ({{ candidate.party }})</p>
+                            <p class="party-text">Party: {{ candidate.party }}</p>
                         {% endif %}
                     </h3>
 
@@ -78,15 +82,19 @@
 
                 </div>
                 {% endfor %}
+
             </div>
         </div>
         {% endfor %}
+
     {% else %}
         <p class="no-results">No results yet.</p>
     {% endif %}
 
-    <a href="{% url 'home' %}" class="back-btn">⬅ Logout</a>
-    <a href="{% url 'final_results_page' %}" class="back-btn">🏆 View Final Results</a>
+    <a href="{% url 'home' %}" class="back-btn">⬅ Home</a>
+    <a href="{% url 'final_results_page' %}" class="back-btn">🏆 Final Results</a>
+
 </div>
+
 </body>
 </html>

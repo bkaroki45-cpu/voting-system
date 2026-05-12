@@ -24,62 +24,81 @@ def home(request):
 # -----------------------------
 # Student registration
 # -----------------------------
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth import login
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+
+from .models import SchoolStudent
+
+
 def student_register(request):
     if request.method == "POST":
         form = StudentRegisterForm(request.POST)
 
         if form.is_valid():
-            
+
             admission_number = form.cleaned_data['admission_number'].strip()
             password = form.cleaned_data['password1']
+            pin = form.cleaned_data['pin'].strip()
 
-            # 1. Check school records using uppercase comparison
+            # =========================
+            # PIN VALIDATION (IMPORTANT FIX)
+            # =========================
+            if len(pin) != 4 or not pin.isdigit():
+                form.add_error("pin", "PIN must be exactly 4 digits.")
+                return render(request, 'vote/register.html', {'form': form})
+
+            # =========================
+            # CHECK SCHOOL RECORD
+            # =========================
             try:
                 school_student = SchoolStudent.objects.get(
-                    admission_number=admission_number.strip()
+                    admission_number=admission_number
                 )
             except SchoolStudent.DoesNotExist:
-                form.add_error(None, "Admission number not found in school records.")
+                form.add_error(None, "Admission number not found.")
                 return render(request, 'vote/register.html', {'form': form})
 
-            # 2. If already linked → already registered
-            if school_student.user is not None:
-                form.add_error(None, "Account already exists. Please login.")
+            # =========================
+            # ALREADY REGISTERED CHECK
+            # =========================
+            if school_student.user:
+                form.add_error(None, "Already registered.")
                 return render(request, 'vote/register.html', {'form': form})
 
-            # 3. If user exists (even if not linked) → login instead
             if User.objects.filter(username=admission_number).exists():
-                form.add_error(None, "Account already exists. Please login.")
+                form.add_error(None, "User already exists.")
                 return render(request, 'vote/register.html', {'form': form})
 
-            # 4. Create account (ONLY VALID CASE)
-            full_name = school_student.full_name.strip()
-            names = full_name.split()
-            
-            first_name = names[0]
-            last_name = " ".join(names[1:]) if len(names) > 1 else ""
+            # =========================
+            # CREATE USER
+            # =========================
+            names = school_student.full_name.strip().split()
+            first_name = names[0] if names else ""
             last_name = " ".join(names[1:]) if len(names) > 1 else ""
 
             user = User.objects.create_user(
                 username=admission_number,
                 password=password,
                 first_name=first_name,
-                last_name=last_name,
+                last_name=last_name
             )
 
-            # ✅ Make sure user is active so visible in admin
             user.is_active = True
-
-            # ✅ Optional: make user staff so visible in admin Users section
-            # user.is_staff = True  # uncomment if you want them to appear immediately in admin
-
             user.save()
 
-            # 5. Link student → user
+            # =========================
+            # LINK + SAVE PIN
+            # =========================
             school_student.user = user
+            school_student.pin = make_password(pin)
+            school_student.is_ussd_registered = True
             school_student.save()
 
-            # 6. Login
+            # =========================
+            # LOGIN USER
+            # =========================
             user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
 
@@ -94,27 +113,30 @@ def student_register(request):
 # -----------------------------
 def student_login(request):
     if request.method == "POST":
-        admission_number = request.POST.get('admission_number', '').strip()
+
+        adm = request.POST.get('admission_number', '').strip()
         password = request.POST.get('password', '').strip()
+        pin = request.POST.get('pin', '').strip()
 
-        # Check if user exists in the User table
-        if not User.objects.filter(username=admission_number).exists():
-            # User not registered yet
-            error = "You are not registered yet. Please register first."
-            return render(request, 'vote/login.html', {'error': error})
+        user = authenticate(request, username=adm, password=password)
 
-        # Authenticate
-        user = authenticate(request, username=admission_number, password=password)
-        if user is not None:
-            # Login the user
+        # CASE 1: LOGIN WITH PASSWORD
+        if user:
             login(request, user)
             return redirect('vote_page')
-        else:
-            # Wrong password
-            error = "Invalid admission number or password."
-            return render(request, 'vote/login.html', {'error': error})
 
-    # GET request
+        # CASE 2: LOGIN WITH PIN (fallback)
+        student = SchoolStudent.objects.filter(admission_number=adm).first()
+
+        if student and student.user and student.pin:
+            if pin and check_password(pin, student.pin):
+                login(request, student.user)
+                return redirect('vote_page')
+
+        return render(request, 'vote/login.html', {
+            'error': "Invalid credentials"
+        })
+
     return render(request, 'vote/login.html')
 
 
@@ -130,17 +152,11 @@ def vote_page(request):
     session = VotingSession.objects.filter(active=True)\
         .order_by('-start_datetime').first()
 
-    now = timezone.now()
-    print("NOW:", now)
-
     if not session:
         return render(request, 'vote/closed.html', {
             'message': 'No active voting session found.',
             'session': None
         })
-
-    print("START:", session.start_datetime)
-    print("END:", session.end_datetime)
 
     if not session.is_open():
         return render(request, 'vote/closed.html', {
@@ -148,17 +164,42 @@ def vote_page(request):
             'session': session
         })
 
+    # 🔥 STRICT: if user already voted ANY position
     if Vote.objects.filter(user=user).exists():
         return redirect('results_page')
 
-    positions = Position.objects.all()
+    # 🔥 FIX: preload positions + candidates correctly
+    positions = Position.objects.prefetch_related('candidate_set').all()
 
     if request.method == "POST":
+
+        # re-check session on submit
+        if not session.is_open():
+            return render(request, 'vote/closed.html', {
+                'message': 'Voting closed while submitting.',
+                'session': session
+            })
+
         for position in positions:
             candidate_id = request.POST.get(f'position_{position.id}')
+
             if candidate_id:
-                candidate = Candidate.objects.get(id=candidate_id)
-                Vote.objects.create(user=user, position=position, candidate=candidate)
+
+                try:
+                    candidate = Candidate.objects.get(
+                        id=candidate_id,
+                        position=position
+                    )
+                except Candidate.DoesNotExist:
+                    continue
+
+                # 🔥 PREVENT DOUBLE VOTE PER POSITION
+                Vote.objects.get_or_create(
+                    user=user,
+                    position=position,
+                    defaults={'candidate': candidate}
+                )
+
         return redirect('results_page')
 
     return render(request, 'vote/vote_page.html', {
@@ -167,30 +208,45 @@ def vote_page(request):
         'session_end': session.end_datetime
     })
 
-
 @login_required
 def results_page(request):
+
     positions = Position.objects.all()
     results = []
 
-    # Get latest session
-    try:
-        session = VotingSession.objects.latest('start_datetime')
-    except VotingSession.DoesNotExist:
-        session = None
+    # 🔥 ACTIVE SESSION (clean)
+    session = VotingSession.objects.filter(active=True)\
+        .order_by('-start_datetime').first()
 
+    # 🔥 OPTIMIZED VOTE FETCH (fast + safe)
+    votes_by_candidate = {}
+    votes_by_position = {}
+
+    for vote in Vote.objects.select_related("candidate", "position"):
+        votes_by_candidate[vote.candidate_id] = votes_by_candidate.get(vote.candidate_id, 0) + 1
+        votes_by_position[vote.position_id] = votes_by_position.get(vote.position_id, 0) + 1
+
+    # 🔥 BUILD RESULTS
     for position in positions:
+
         candidates = Candidate.objects.filter(position=position)
-        total_votes = Vote.objects.filter(candidate__position=position).count()
+
+        total_votes = votes_by_position.get(position.id, 0)
 
         candidate_results = []
+
         for candidate in candidates:
-            vote_count = Vote.objects.filter(candidate=candidate).count()
-            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
+
+            vote_count = votes_by_candidate.get(candidate.id, 0)
+
+            percentage = (vote_count / total_votes * 100) if total_votes else 0
 
             candidate_results.append({
-                'name': f"{candidate.name} & {candidate.deputy_name}" if candidate.deputy_name else candidate.name,
-                'party': candidate.party if candidate.party else '',
+                'name': (
+                    f"{candidate.name} & {candidate.deputy_name}"
+                    if candidate.deputy_name else candidate.name
+                ),
+                'party': candidate.party or '',
                 'votes': vote_count,
                 'percentage': round(percentage, 1),
                 'photo': candidate.photo.url if candidate.photo else None
@@ -201,18 +257,16 @@ def results_page(request):
             'candidates': candidate_results
         })
 
-    # ✅ Countdown timestamp
-    session_timestamp = None
+    # 🔥 SAFE TIMESTAMP
     session_end_datetime = None
+
     if session:
         session_end_datetime = session.end_datetime
-        session_timestamp = int(session_end_datetime.timestamp() * 1000)
 
     return render(request, 'vote/results.html', {
         'results': results,
         'session': session,
-        'session_end': session_end_datetime,
-        'session_timestamp': session_timestamp
+        'session_end': session_end_datetime
     })
 
 
@@ -224,16 +278,15 @@ def close(request):
 def final_results_page(request):
 
     # -----------------------------
-    # Get latest session safely
+    # ACTIVE SESSION
     # -----------------------------
-    session = VotingSession.objects.order_by('-start_datetime').first()
+    session = VotingSession.objects.filter(active=True)\
+        .order_by('-start_datetime').first()
 
     if not session:
         return redirect('results_page')
 
-    # -----------------------------
-    # If voting still open → show message
-    # -----------------------------
+    # If voting still ongoing
     if session.is_open():
         return render(request, 'vote/results.html', {
             'voting_message': "Voting is still ongoing. Final results are not ready.",
@@ -241,7 +294,7 @@ def final_results_page(request):
         })
 
     # -----------------------------
-    # Handle comments
+    # COMMENTS
     # -----------------------------
     error_message = None
 
@@ -249,15 +302,14 @@ def final_results_page(request):
         message = request.POST.get('message')
         adm_number = request.POST.get('adm_number')
 
-        try:
-            user_adm_number = request.user.schoolstudent.admission_number
-        except:
-            user_adm_number = None
+        student = SchoolStudent.objects.filter(user=request.user).first()
 
         if not message or not adm_number:
             error_message = "Please fill all fields."
-        elif adm_number != user_adm_number:
+
+        elif not student or adm_number != student.admission_number:
             error_message = "Invalid admission number."
+
         else:
             Comment.objects.create(
                 user=request.user,
@@ -267,7 +319,22 @@ def final_results_page(request):
             return redirect('final_results_page')
 
     # -----------------------------
-    # BUILD RESULTS (FIXED LOGIC)
+    # FILTERED VOTES (SESSION SAFE FIX)
+    # -----------------------------
+    votes = Vote.objects.filter(
+        voted_at__gte=session.start_datetime,
+        voted_at__lte=session.end_datetime
+    ).select_related("candidate", "position")
+
+    votes_by_candidate = {}
+    votes_by_position = {}
+
+    for vote in votes:
+        votes_by_candidate[vote.candidate_id] = votes_by_candidate.get(vote.candidate_id, 0) + 1
+        votes_by_position[vote.position_id] = votes_by_position.get(vote.position_id, 0) + 1
+
+    # -----------------------------
+    # BUILD RESULTS
     # -----------------------------
     final_results = []
 
@@ -275,16 +342,16 @@ def final_results_page(request):
 
         candidates = Candidate.objects.filter(position=position)
 
-        candidate_results = []
+        total_votes = votes_by_position.get(position.id, 0)
 
+        candidate_results = []
         max_votes = 0
 
         for candidate in candidates:
-            vote_count = Vote.objects.filter(candidate=candidate).count()
+
+            vote_count = votes_by_candidate.get(candidate.id, 0)
 
             max_votes = max(max_votes, vote_count)
-
-            total_votes = Vote.objects.filter(candidate__position=position).count()
 
             percentage = (vote_count / total_votes * 100) if total_votes else 0
 
@@ -301,10 +368,13 @@ def final_results_page(request):
             c for c in candidate_results if c["votes"] == max_votes
         ] if max_votes > 0 else []
 
+        winner_ids = [w["id"] for w in winners]
+
         final_results.append({
             "position": position.name,
             "candidates": candidate_results,
-            "winners": winners
+            "winners": winners,
+            "winners_ids": winner_ids
         })
 
     comments = Comment.objects.all().order_by('-timestamp')
@@ -320,49 +390,16 @@ def final_results_page(request):
 
 
 
-
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-from django.db import connection
-from .models import SchoolStudent, Position, Candidate, Vote
-from django.contrib.auth.hashers import make_password, check_password
-
-
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
-from django.contrib.auth.hashers import make_password, check_password
-
-from .models import SchoolStudent, Position, Candidate, Vote
-
-
-def safe_int(value):
-    try:
-        return int(value)
-    except:
-        return None
-
-
-def is_authenticated(student, pin):
-    if not student:
-        return False
-    if not student.pin:
-        return False
-    if not pin:
-        return False
-    return check_password(pin, student.pin)
-
-
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
-from .models import SchoolStudent, Position, Candidate, Vote
 
-# You said you already have this, keep it or replace with your own auth function
-from django.contrib.auth.hashers import check_password
+from .models import SchoolStudent, Position, Candidate, Vote, VotingSession
 
 
-
-
+# =========================
+# HELPERS
+# =========================
 def safe_int(value):
     try:
         return int(value)
@@ -371,283 +408,163 @@ def safe_int(value):
 
 
 def is_authenticated(student, pin):
-    if not student or not student.pin:
+    if not student or not pin:
         return False
+    return student.check_pin(pin)
 
-    return check_password(pin, student.pin)
+
+def get_active_session():
+    return VotingSession.objects.filter(active=True).order_by('-start_datetime').first()
 
 
+# =========================
+# USSD VIEW (FINAL)
+# =========================
 @csrf_exempt
 def ussd_callback(request):
 
     try:
-
-        # ====================================
-        # SUPPORT BOTH POST & GET
-        # ====================================
         text = request.POST.get('text') or request.GET.get('text') or ''
         phone = request.POST.get('phoneNumber') or request.GET.get('phoneNumber') or ''
 
         text = text.strip()
-
         parts = text.split("*") if text else []
 
         adm = parts[0] if len(parts) > 0 else None
         pin = parts[1] if len(parts) > 1 else None
 
-        student = None
+        student = SchoolStudent.objects.filter(admission_number=adm).first() if adm else None
 
-        if adm:
-            student = SchoolStudent.objects.filter(
-                admission_number=adm
-            ).first()
+        session = get_active_session()
 
-        # ====================================
-        # STEP 1
-        # ====================================
+        # =========================
+        # SESSION CHECK
+        # =========================
+        if not session or not session.is_open():
+            return HttpResponse("END Voting closed", content_type="text/plain")
+
+        # =========================
+        # STEP 1: ENTER ADM
+        # =========================
         if text == "":
+            return HttpResponse("CON Enter Admission Number", content_type="text/plain")
 
-            return HttpResponse(
-                "CON Enter Admission Number",
-                content_type="text/plain"
-            )
-
-        # ====================================
-        # STEP 2
-        # ====================================
+        # =========================
+        # STEP 2: CHECK STUDENT
+        # =========================
         if len(parts) == 1:
 
             if not student:
-                return HttpResponse(
-                    "END Not registered in school system",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END Not registered", content_type="text/plain")
 
             if not student.is_ussd_registered:
+                return HttpResponse("CON Set 4-digit PIN", content_type="text/plain")
 
-                return HttpResponse(
-                    "CON Set 4-digit PIN",
-                    content_type="text/plain"
-                )
+            return HttpResponse("CON Enter PIN", content_type="text/plain")
 
-            return HttpResponse(
-                "CON Enter PIN",
-                content_type="text/plain"
-            )
-
-        # ====================================
-        # STEP 3
-        # ====================================
+        # =========================
+        # STEP 3: REGISTER OR LOGIN PIN
+        # =========================
         if len(parts) == 2:
 
             if not student:
-                return HttpResponse(
-                    "END Invalid admission number",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END Invalid admission number", content_type="text/plain")
 
             # REGISTER PIN
             if not student.is_ussd_registered:
 
-                if not pin:
-                    return HttpResponse(
-                        "END PIN required",
-                        content_type="text/plain"
-                    )
-
-                if len(pin) != 4 or not pin.isdigit():
-
-                    return HttpResponse(
-                        "END PIN must be 4 digits",
-                        content_type="text/plain"
-                    )
+                if not pin or len(pin) != 4:
+                    return HttpResponse("END PIN must be 4 digits", content_type="text/plain")
 
                 student.pin = make_password(pin)
                 student.is_ussd_registered = True
                 student.save()
 
-                return HttpResponse(
-                    "END PIN created successfully. Dial again.",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END PIN created. Re-dial to vote.", content_type="text/plain")
 
-            # LOGIN
+            # LOGIN WITH PIN
             if not is_authenticated(student, pin):
-
-                return HttpResponse(
-                    "END Wrong PIN",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END Wrong PIN", content_type="text/plain")
 
             return HttpResponse(
                 f"CON Welcome {student.full_name}\n1. Vote",
                 content_type="text/plain"
             )
 
-        # ====================================
-        # STEP 4
-        # ====================================
+        # =========================
+        # STEP 4: SELECT POSITION
+        # =========================
         if len(parts) == 3:
 
             if not is_authenticated(student, pin):
+                return HttpResponse("END Authentication failed", content_type="text/plain")
 
-                return HttpResponse(
-                    "END Authentication failed",
-                    content_type="text/plain"
-                )
-
-            positions = list(
-                Position.objects.all().order_by("id")
-            )
+            positions = list(Position.objects.order_by("id"))
 
             if not positions:
-
-                return HttpResponse(
-                    "END No positions available",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END No positions available", content_type="text/plain")
 
             msg = "CON Select Position\n"
-
             for i, p in enumerate(positions, 1):
                 msg += f"{i}. {p.name}\n"
 
-            return HttpResponse(
-                msg,
-                content_type="text/plain"
-            )
+            return HttpResponse(msg, content_type="text/plain")
 
-        # ====================================
-        # STEP 5
-        # ====================================
+        # =========================
+        # STEP 5: SELECT CANDIDATE
+        # =========================
         if len(parts) == 4:
 
             if not is_authenticated(student, pin):
-
-                return HttpResponse(
-                    "END Authentication failed",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END Authentication failed", content_type="text/plain")
 
             pos_index = safe_int(parts[2])
+            positions = list(Position.objects.order_by("id"))
 
-            positions = list(
-                Position.objects.all().order_by("id")
-            )
-
-            if not pos_index:
-
-                return HttpResponse(
-                    "END Invalid position",
-                    content_type="text/plain"
-                )
-
-            if pos_index < 1 or pos_index > len(positions):
-
-                return HttpResponse(
-                    "END Invalid position",
-                    content_type="text/plain"
-                )
+            if not pos_index or pos_index < 1 or pos_index > len(positions):
+                return HttpResponse("END Invalid position", content_type="text/plain")
 
             position = positions[pos_index - 1]
 
-            candidates = list(
-                Candidate.objects.filter(
-                    position=position
-                ).order_by("id")
-            )
+            candidates = list(Candidate.objects.filter(position=position).order_by("id"))
 
             if not candidates:
-
-                return HttpResponse(
-                    "END No candidates available",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END No candidates found", content_type="text/plain")
 
             msg = "CON Select Candidate\n"
-
             for i, c in enumerate(candidates, 1):
                 msg += f"{i}. {c.name}\n"
 
-            return HttpResponse(
-                msg,
-                content_type="text/plain"
-            )
+            return HttpResponse(msg, content_type="text/plain")
 
-        # ====================================
-        # STEP 6
-        # ====================================
+        # =========================
+        # STEP 6: VOTE SUBMISSION
+        # =========================
         if len(parts) >= 5:
 
             if not is_authenticated(student, pin):
-
-                return HttpResponse(
-                    "END Authentication failed",
-                    content_type="text/plain"
-                )
+                return HttpResponse("END Authentication failed", content_type="text/plain")
 
             pos_index = safe_int(parts[2])
             cand_index = safe_int(parts[3])
 
-            positions = list(
-                Position.objects.all().order_by("id")
-            )
+            positions = list(Position.objects.order_by("id"))
 
-            if not pos_index:
-
-                return HttpResponse(
-                    "END Invalid position",
-                    content_type="text/plain"
-                )
-
-            if pos_index < 1 or pos_index > len(positions):
-
-                return HttpResponse(
-                    "END Invalid position",
-                    content_type="text/plain"
-                )
+            if not pos_index or pos_index < 1 or pos_index > len(positions):
+                return HttpResponse("END Invalid position", content_type="text/plain")
 
             position = positions[pos_index - 1]
 
-            candidates = list(
-                Candidate.objects.filter(
-                    position=position
-                ).order_by("id")
-            )
+            candidates = list(Candidate.objects.filter(position=position).order_by("id"))
 
-            if not candidates:
-
-                return HttpResponse(
-                    "END No candidates found",
-                    content_type="text/plain"
-                )
-
-            if not cand_index:
-
-                return HttpResponse(
-                    "END Invalid candidate",
-                    content_type="text/plain"
-                )
-
-            if cand_index < 1 or cand_index > len(candidates):
-
-                return HttpResponse(
-                    "END Invalid candidate",
-                    content_type="text/plain"
-                )
+            if not cand_index or cand_index < 1 or cand_index > len(candidates):
+                return HttpResponse("END Invalid candidate", content_type="text/plain")
 
             candidate = candidates[cand_index - 1]
 
-            # PREVENT DOUBLE VOTING
-            if Vote.objects.filter(
-                user=student.user,
-                position=position
-            ).exists():
-
-                return HttpResponse(
-                    "END Already voted for this position",
-                    content_type="text/plain"
-                )
+            # PREVENT DOUBLE VOTING (WEB + USSD)
+            if Vote.objects.filter(user=student.user, position=position).exists():
+                return HttpResponse("END Already voted for this position", content_type="text/plain")
 
             Vote.objects.create(
                 user=student.user,
@@ -656,19 +573,9 @@ def ussd_callback(request):
                 candidate=candidate
             )
 
-            return HttpResponse(
-                f"END Vote submitted for {candidate.name}",
-                content_type="text/plain"
-            )
+            return HttpResponse(f"END Vote recorded for {candidate.name}", content_type="text/plain")
 
-        return HttpResponse(
-            "END Invalid request",
-            content_type="text/plain"
-        )
+        return HttpResponse("END Invalid request", content_type="text/plain")
 
     except Exception as e:
-
-        return HttpResponse(
-            f"END ERROR: {str(e)}",
-            content_type="text/plain"
-        )
+        return HttpResponse(f"END ERROR: {str(e)}", content_type="text/plain")

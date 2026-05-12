@@ -34,15 +34,20 @@
             <!-- Admission Number -->
             <label for="{{ form.admission_number.id_for_label }}">Admission Number</label>
             {{ form.admission_number }}
-        
+
             <!-- Password -->
             <label for="{{ form.password1.id_for_label }}">Password</label>
             {{ form.password1 }}
-        
+
             <!-- Confirm Password -->
             <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
             {{ form.password2 }}
-        
+
+            <!-- 🔥 PIN FIELD (ADD THIS) -->
+            <label for="id_pin">Create PIN (4 digits)</label>
+            <label for="{{ form.pin.id_for_label }}">Create PIN (4 digits)</label>
+            {{ form.pin }}
+
             <button type="submit">Register</button>
         </form>
 

@@ -19,14 +19,14 @@
         <form method="POST">
             {% csrf_token %}
 
-            <!-- Admission Number -->
-            <label for="id_admission_number">Admission Number</label>
-            <input type="text" name="admission_number" id="id_admission_number" 
-                   value="{{ request.POST.admission_number|default_if_none:'' }}" required>
+            <label>Admission Number</label>
+            <input type="text" name="admission_number" required>
 
-            <!-- Password -->
-            <label for="id_password">Password</label>
-            <input type="password" name="password" id="id_password" required>
+            <label>Password (optional)</label>
+            <input type="password" name="password">
+
+            <label>PIN (optional)</label>
+            <input type="password" name="pin" maxlength="4">
 
             <button type="submit">Login</button>
         </form>

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.utils.timezone import localtime
 from datetime import timedelta
+from django.contrib.auth.hashers import make_password
 
 from .models import Student, SchoolStudent, VotingSession
 
@@ -10,28 +11,41 @@ from .models import Student, SchoolStudent, VotingSession
 # -----------------------------
 # Register Form
 # -----------------------------
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
+
+from .models import SchoolStudent
+
+
 class StudentRegisterForm(UserCreationForm):
     admission_number = forms.CharField(max_length=50)
+    pin = forms.CharField(max_length=4)
 
     class Meta:
         model = User
-        fields = ['admission_number', 'password1', 'password2']
+        fields = ['admission_number', 'password1', 'password2', 'pin']
 
     def clean_admission_number(self):
         admission_number = self.cleaned_data['admission_number'].strip()
 
         if not SchoolStudent.objects.filter(admission_number=admission_number).exists():
-            raise forms.ValidationError("Admission number not found in school records.")
+            raise forms.ValidationError("Admission number not found.")
 
         student = SchoolStudent.objects.get(admission_number=admission_number)
-        if student.user is not None:
+
+        if student.user:
             raise forms.ValidationError("Already registered.")
 
         return admission_number
 
     def save(self, commit=True):
         user = super().save(commit=False)
+
         admission_number = self.cleaned_data['admission_number']
+        pin = self.cleaned_data['pin']
+
         user.username = admission_number
 
         if commit:
@@ -39,6 +53,8 @@ class StudentRegisterForm(UserCreationForm):
 
         student = SchoolStudent.objects.get(admission_number=admission_number)
         student.user = user
+        student.pin = make_password(pin)   # ✅ STORE PIN HERE
+        student.is_ussd_registered = True
         student.save()
 
         return user

@@ -8,29 +8,62 @@
     <link rel="stylesheet" href="{% static 'css/closed.css' %}">
 </head>
 <body>
-    <div class="message-container">
-        <h2>🛑 Voting is Closed</h2>
 
-        <p>{{ message }}</p>
+<div class="message-container">
 
-        {% if session %}
-            <p>Voting was scheduled from:</p>
+    <h2>🛑 Voting Status</h2>
+
+    <!-- Message from view -->
+    <p>{{ message }}</p>
+
+    {% if session %}
+
+        <div class="session-info">
+            <h3>📅 Voting Session Details</h3>
 
             <p>
-                <strong>Start:</strong> {{ session.start_datetime|time:"h:i A" }} <br>
-                <strong>End:</strong> {{ session.end_datetime|time:"h:i A" }}
+                <strong>Status:</strong>
+                {% if session.active %}
+                    Active (Currently Closed or Outside Time Window)
+                {% else %}
+                    Inactive
+                {% endif %}
             </p>
 
             <p>
-                <em>On the date:</em>
-                {{ session.start_datetime|date:"D, d M Y" }}
+                <strong>Start Date & Time:</strong><br>
+                {{ session.start_datetime|date:"D, d M Y" }} at {{ session.start_datetime|time:"h:i A" }}
             </p>
-        {% else %}
-            <p><em>No active voting session found.</em></p>
-        {% endif %}
 
+            <p>
+                <strong>End Date & Time:</strong><br>
+                {{ session.end_datetime|date:"D, d M Y" }} at {{ session.end_datetime|time:"h:i A" }}
+            </p>
+
+            <p>
+                <strong>Current Status:</strong>
+                {% now "U" as now_ts %}
+                {% if session.start_datetime|date:"U" > now_ts %}
+                    ⏳ Not started yet
+                {% elif session.end_datetime|date:"U" < now_ts %}
+                    ❌ Already ended
+                {% else %}
+                    ⚠️ Currently active (but blocked by system rules)
+                {% endif %}
+            </p>
+
+        </div>
+
+    {% else %}
+        <p><em>No active voting session found.</em></p>
+    {% endif %}
+
+    <div class="buttons">
         <a href="{% url 'home' %}" class="back-btn">🏠 Back to Home</a>
         <a href="{% url 'final_results_page' %}" class="back-btn">🏆 View Final Results</a>
     </div>
+
+</div>
+
 </body>
 </html>

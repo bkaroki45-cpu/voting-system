@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/votepage.css' %}">
 </head>
 <body>
+
 <div class="container">
 
     <h1 class="title">🗳️ Cast Your Vote</h1>
@@ -20,7 +21,7 @@
     <script>
         const endTime = new Date("{{ session_end|date:'c' }}").getTime();
 
-        const countdown = setInterval(function() {
+        const countdown = setInterval(function () {
             const now = new Date().getTime();
             const distance = endTime - now;
 
@@ -38,7 +39,9 @@
                 const hours = Math.floor((distance % (1000*60*60*24))/(1000*60*60));
                 const minutes = Math.floor((distance % (1000*60*60))/(1000*60));
                 const seconds = Math.floor((distance % (1000*60))/1000);
-                document.getElementById("time").innerHTML = hours + "h " + minutes + "m " + seconds + "s";
+
+                document.getElementById("time").innerHTML =
+                    hours + "h " + minutes + "m " + seconds + "s";
             }
         }, 1000);
     </script>
@@ -48,13 +51,20 @@
         {% csrf_token %}
 
         {% for position in positions %}
+
         <div class="position-card">
             <h2>{{ position.name }}</h2>
+
             <div class="candidates-grid">
+
                 {% for candidate in position.candidate_set.all %}
+
                 <label class="candidate-card">
 
-                    <input type="radio" name="position_{{ position.id }}" value="{{ candidate.id }}" required>
+                    <input type="radio"
+                           name="position_{{ position.id }}"
+                           value="{{ candidate.id }}"
+                           required>
 
                     <div class="candidate-img">
                         {% if candidate.photo %}
@@ -65,28 +75,42 @@
                     </div>
 
                     <div class="candidate-info">
-                        <span class="candidate-name">{{ candidate.name }}
-                            {% if candidate.deputy_name %}& {{ candidate.deputy_name }}{% endif %}
+                        <span class="candidate-name">
+                            {{ candidate.name }}
+                            {% if candidate.deputy_name %}
+                                & {{ candidate.deputy_name }}
+                            {% endif %}
                         </span>
-                        <br>
+
                         {% if candidate.party %}
                             <p class="party-text">Party: {{ candidate.party }}</p>
                         {% endif %}
+
                         {% if candidate.deputy_name %}
                             <small class="deputy-text">President & Deputy Team</small>
                         {% endif %}
                     </div>
 
                 </label>
+
                 {% empty %}
-                    <p class="no-candidates">No candidates available for this position</p>
+                    <p class="no-candidates">
+                        No candidates available for this position
+                    </p>
                 {% endfor %}
+
             </div>
         </div>
+
         {% endfor %}
 
-        <button type="submit" class="btn-submit">✅ Submit Vote</button>
+        <button type="submit" class="btn-submit">
+            ✅ Submit Vote
+        </button>
+
     </form>
+
 </div>
+
 </body>
 </html>
