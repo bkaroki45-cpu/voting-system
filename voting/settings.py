@@ -84,13 +84,15 @@ WSGI_APPLICATION = 'voting.wsgi.application'
 # ------------------------------
 # DATABASE (POSTGRES ON RENDER / SQLITE LOCAL FALLBACK)
 # ------------------------------
+import dj_database_url
+import os
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
+        default=os.environ.get("DATABASE_URL"),
+        conn_max_age=600
     )
 }
-
 # ------------------------------
 # PASSWORD VALIDATION
 # ------------------------------

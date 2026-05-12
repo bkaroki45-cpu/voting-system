@@ -325,32 +325,53 @@ def ussd_callback(request):
 
     response = ""
 
+    # STEP 1: main menu
     if text == "":
         response = "CON Welcome to E-Voting\n1. Vote"
 
+    # STEP 2: show positions
     elif text == "1":
+        positions = Position.objects.all()
 
-        candidates = Candidate.objects.all()
+        response = "CON Select Position\n"
+        for i, p in enumerate(positions, 1):
+            response += f"{i}. {p.name}\n"
+
+    # STEP 3: show candidates for position
+    elif len(text.split("*")) == 2:
+
+        parts = text.split("*")
+        position_index = int(parts[1]) - 1
+
+        position = list(Position.objects.all())[position_index]
+        candidates = Candidate.objects.filter(position=position)
 
         response = "CON Select Candidate\n"
         for i, c in enumerate(candidates, 1):
             response += f"{i}. {c.name}\n"
 
-    else:
+    # STEP 4: vote
+    elif len(text.split("*")) == 3:
+
         parts = text.split("*")
 
-        if len(parts) == 2:
+        position_index = int(parts[1]) - 1
+        candidate_index = int(parts[2]) - 1
 
-            index = int(parts[1]) - 1
-            candidate = Candidate.objects.all()[index]
-            position = candidate.position
+        position = list(Position.objects.all())[position_index]
+        candidates = list(Candidate.objects.filter(position=position))
 
+        candidate = candidates[candidate_index]
+
+        # prevent duplicate voting per phone + position (important)
+        if Vote.objects.filter(phone=phone, position=position).exists():
+            response = "END You already voted for this position"
+        else:
             Vote.objects.create(
                 phone=phone,
                 position=position,
                 candidate=candidate
             )
-
             response = f"END Vote submitted for {candidate.name}"
 
     return HttpResponse(response, content_type="text/plain")
