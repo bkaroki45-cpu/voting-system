@@ -323,142 +323,141 @@ def final_results_page(request):
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-from django.contrib.auth.hashers import make_password, check_password
-import time
-
+from django.db import connection
 from .models import SchoolStudent, Position, Candidate, Vote
+from django.contrib.auth.hashers import make_password, check_password
 
 
 @csrf_exempt
 def ussd_callback(request):
 
-    text = request.POST.get('text', '').strip()
-    phone = request.POST.get('phoneNumber', '')
+    try:
+        text = request.POST.get('text', '').strip()
+        phone = request.POST.get('phoneNumber', '')
 
-    parts = text.split("*") if text else []
+        parts = text.split("*") if text else []
 
-    adm = parts[0] if len(parts) > 0 else None
-    pin = parts[1] if len(parts) > 1 else None
-    step3 = parts[2] if len(parts) > 2 else None
-    step4 = parts[3] if len(parts) > 3 else None
+        # =========================
+        # STEP 1: ENTER ADMISSION
+        # =========================
+        if text == "":
+            return HttpResponse("CON Enter Admission Number", content_type="text/plain")
 
-    # =========================
-    # STEP 1: ENTER ADMISSION
-    # =========================
-    if text == "":
-        return HttpResponse("CON Enter Admission Number", "text/plain")
+        adm = parts[0] if len(parts) > 0 else None
+        pin = parts[1] if len(parts) > 1 else None
 
-    student = SchoolStudent.objects.filter(admission_number=adm).first() if adm else None
+        student = SchoolStudent.objects.filter(admission_number=adm).first()
 
-    # =========================
-    # STEP 2: ADMISSION CHECK
-    # =========================
-    if len(parts) == 1:
+        # =========================
+        # STEP 2: CHECK STUDENT
+        # =========================
+        if len(parts) == 1:
 
-        if not student:
-            return HttpResponse("END Not registered in school system", "text/plain")
+            if not student:
+                return HttpResponse("END Not registered in school system", content_type="text/plain")
 
-        if not student.is_ussd_registered:
-            return HttpResponse("CON Set 4-digit PIN", "text/plain")
+            if not student.is_ussd_registered:
+                return HttpResponse("CON Set 4-digit PIN", content_type="text/plain")
 
-        return HttpResponse("CON Enter PIN", "text/plain")
+            return HttpResponse("CON Enter PIN", content_type="text/plain")
 
-    # =========================
-    # STEP 3: REGISTER / LOGIN
-    # =========================
-    if len(parts) == 2:
+        # =========================
+        # STEP 3: REGISTER / LOGIN
+        # =========================
+        if len(parts) == 2:
 
-        if not student:
-            return HttpResponse("END Invalid admission number", "text/plain")
+            if not student:
+                return HttpResponse("END Invalid admission number", content_type="text/plain")
 
-        # 🔥 PIN VALIDATION (MUST BE 4 DIGITS)
-        if not pin.isdigit() or len(pin) != 4:
-            return HttpResponse("END PIN must be 4 digits", "text/plain")
+            if not student.is_ussd_registered:
+                if len(pin) != 4 or not pin.isdigit():
+                    return HttpResponse("END PIN must be 4 digits", content_type="text/plain")
 
-        # REGISTER PIN
-        if not student.is_ussd_registered:
-            student.pin = make_password(pin)
-            student.is_ussd_registered = True
-            student.save()
-            return HttpResponse("END PIN created. Dial again.", "text/plain")
+                student.pin = make_password(pin)
+                student.is_ussd_registered = True
+                student.save()
 
-        # LOGIN
-        if not check_password(pin, student.pin):
-            return HttpResponse("END Wrong PIN", "text/plain")
+                return HttpResponse("END PIN created. Dial again.", content_type="text/plain")
 
-        return HttpResponse(f"CON Welcome {student.full_name}\n1. Vote", "text/plain")
+            if not check_password(pin, student.pin):
+                return HttpResponse("END Wrong PIN", content_type="text/plain")
 
-    # =========================
-    # STEP 4: POSITIONS
-    # =========================
-    if len(parts) == 3:
+            return HttpResponse(f"CON Welcome {student.full_name}\n1. Vote", content_type="text/plain")
 
-        if not student or not check_password(pin, student.pin):
-            return HttpResponse("END Auth failed", "text/plain")
+        # =========================
+        # STEP 4: POSITIONS
+        # =========================
+        if len(parts) == 3:
 
-        positions = Position.objects.all().order_by("id")
+            if not student or not check_password(pin, student.pin):
+                return HttpResponse("END Auth failed", content_type="text/plain")
 
-        msg = "CON Select Position\n"
-        for i, p in enumerate(positions, 1):
-            msg += f"{i}. {p.name}\n"
+            positions = Position.objects.all().order_by("id")
 
-        return HttpResponse(msg, "text/plain")
+            msg = "CON Select Position\n"
+            for i, p in enumerate(positions, 1):
+                msg += f"{i}. {p.name}\n"
 
-    # =========================
-    # STEP 5: CANDIDATES
-    # =========================
-    if len(parts) == 4:
+            return HttpResponse(msg, content_type="text/plain")
 
-        if not student or not check_password(pin, student.pin):
-            return HttpResponse("END Auth failed", "text/plain")
+        # =========================
+        # STEP 5: CANDIDATES
+        # =========================
+        if len(parts) == 4:
 
-        positions = list(Position.objects.all().order_by("id"))
+            pos_index = int(parts[2])
 
-        try:
-            position = positions[int(step3) - 1]
-        except:
-            return HttpResponse("END Invalid position", "text/plain")
+            positions = list(Position.objects.all().order_by("id"))
 
-        candidates = Candidate.objects.filter(position=position).order_by("id")
+            if pos_index < 1 or pos_index > len(positions):
+                return HttpResponse("END Invalid position", content_type="text/plain")
 
-        msg = "CON Select Candidate\n"
-        for i, c in enumerate(candidates, 1):
-            msg += f"{i}. {c.name}\n"
+            position = positions[pos_index - 1]
 
-        return HttpResponse(msg, "text/plain")
+            candidates = list(Candidate.objects.filter(position=position).order_by("id"))
 
-    # =========================
-    # STEP 6: VOTE
-    # =========================
-    if len(parts) >= 5:
+            msg = "CON Select Candidate\n"
+            for i, c in enumerate(candidates, 1):
+                msg += f"{i}. {c.name}\n"
 
-        if not student or not check_password(pin, student.pin):
-            return HttpResponse("END Auth failed", "text/plain")
+            return HttpResponse(msg, content_type="text/plain")
 
-        positions = list(Position.objects.all().order_by("id"))
+        # =========================
+        # STEP 6: VOTE
+        # =========================
+        if len(parts) >= 5:
 
-        try:
-            position = positions[int(step3) - 1]
-        except:
-            return HttpResponse("END Invalid position", "text/plain")
+            pos_index = int(parts[2])
+            cand_index = int(parts[3])
 
-        candidates = list(Candidate.objects.filter(position=position).order_by("id"))
+            positions = list(Position.objects.all().order_by("id"))
 
-        try:
-            candidate = candidates[int(step4) - 1]
-        except:
-            return HttpResponse("END Invalid candidate", "text/plain")
+            if pos_index < 1 or pos_index > len(positions):
+                return HttpResponse("END Invalid position", content_type="text/plain")
 
-        if Vote.objects.filter(user=student.user, position=position).exists():
-            return HttpResponse("END Already voted", "text/plain")
+            position = positions[pos_index - 1]
 
-        Vote.objects.create(
-            user=student.user,
-            phone=phone,
-            position=position,
-            candidate=candidate
-        )
+            candidates = list(Candidate.objects.filter(position=position).order_by("id"))
 
-        return HttpResponse(f"END Vote submitted for {candidate.name}", "text/plain")
+            if cand_index < 1 or cand_index > len(candidates):
+                return HttpResponse("END Invalid candidate", content_type="text/plain")
 
-    return HttpResponse("END Invalid request", "text/plain")
+            candidate = candidates[cand_index - 1]
+
+            if Vote.objects.filter(phone=phone, position=position).exists():
+                return HttpResponse("END Already voted", content_type="text/plain")
+
+            Vote.objects.create(
+                user=student.user,
+                phone=phone,
+                position=position,
+                candidate=candidate
+            )
+
+            return HttpResponse(f"END Vote submitted for {candidate.name}", content_type="text/plain")
+
+        return HttpResponse("END Invalid request", content_type="text/plain")
+
+    except Exception as e:
+        print("USSD ERROR:", e)
+        return HttpResponse("END System error. Try again.", content_type="text/plain")
