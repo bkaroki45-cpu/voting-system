@@ -668,9 +668,7 @@ def ussd_callback(request):
 
     except Exception as e:
 
-        print("USSD ERROR:", str(e))
-
         return HttpResponse(
-            "END System error. Try again later.",
+            f"END ERROR: {str(e)}",
             content_type="text/plain"
         )
