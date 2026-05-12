@@ -70,7 +70,16 @@ class Vote(models.Model):
     voted_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'position')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'position'],
+                name='unique_user_position'
+            ),
+            models.UniqueConstraint(
+                fields=['phone', 'position'],
+                name='unique_phone_position'
+            ),
+        ]
 
     def __str__(self):
         if self.user:

@@ -9,6 +9,8 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from datetime import datetime, date, time
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 
 # -----------------------------
 # Home page
@@ -313,45 +315,42 @@ def final_results_page(request):
     })
 
 
-from django.http import HttpResponse
-from .models import Vote
 
+
+@csrf_exempt
 def ussd_callback(request):
 
-    session_id = request.POST.get('sessionId')
-    service_code = request.POST.get('serviceCode')
-    phone_number = request.POST.get('phoneNumber')
-    text = request.POST.get('text')
+    text = request.POST.get('text', '')
+    phone = request.POST.get('phoneNumber')
 
     response = ""
 
     if text == "":
-
-        response = "CON Welcome to E-Voting\n"
-        response += "1. Vote"
+        response = "CON Welcome to E-Voting\n1. Vote"
 
     elif text == "1":
 
+        candidates = Candidate.objects.all()
+
         response = "CON Select Candidate\n"
-        response += "1. Brian\n"
-        response += "2. John"
+        for i, c in enumerate(candidates, 1):
+            response += f"{i}. {c.name}\n"
 
-    elif text == "1*1":
+    else:
+        parts = text.split("*")
 
-        Vote.objects.create(
-            phone=phone_number,
-            candidate="Brian"
-        )
+        if len(parts) == 2:
 
-        response = "END Vote submitted for Brian"
+            index = int(parts[1]) - 1
+            candidate = Candidate.objects.all()[index]
+            position = candidate.position
 
-    elif text == "1*2":
+            Vote.objects.create(
+                phone=phone,
+                position=position,
+                candidate=candidate
+            )
 
-        Vote.objects.create(
-            phone=phone_number,
-            candidate="John"
-        )
+            response = f"END Vote submitted for {candidate.name}"
 
-        response = "END Vote submitted for John"
-
-    return HttpResponse(response, content_type='text/plain')
+    return HttpResponse(response, content_type="text/plain")
