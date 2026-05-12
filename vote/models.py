@@ -104,7 +104,7 @@ class SchoolStudent(models.Model):
     imported = models.BooleanField(default=False)
 
     # 🔥 ADD THESE FOR USSD
-    pin = models.CharField(max_length=4, null=True, blank=True)
+    pin = models.CharField(max_length=255, null=True, blank=True)
     is_ussd_registered = models.BooleanField(default=False)
     
 
