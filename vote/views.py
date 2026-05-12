@@ -328,6 +328,30 @@ from .models import SchoolStudent, Position, Candidate, Vote
 from django.contrib.auth.hashers import make_password, check_password
 
 
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from django.contrib.auth.hashers import make_password, check_password
+
+from .models import SchoolStudent, Position, Candidate, Vote
+
+
+def safe_int(value):
+    try:
+        return int(value)
+    except:
+        return None
+
+
+def is_authenticated(student, pin):
+    if not student:
+        return False
+    if not student.pin:
+        return False
+    if not pin:
+        return False
+    return check_password(pin, student.pin)
+
+
 @csrf_exempt
 def ussd_callback(request):
 
@@ -337,19 +361,19 @@ def ussd_callback(request):
 
         parts = text.split("*") if text else []
 
+        adm = parts[0] if len(parts) > 0 else None
+        pin = parts[1] if len(parts) > 1 else None
+
+        student = SchoolStudent.objects.filter(admission_number=adm).first() if adm else None
+
         # =========================
-        # STEP 1: ENTER ADMISSION
+        # STEP 1
         # =========================
         if text == "":
             return HttpResponse("CON Enter Admission Number", content_type="text/plain")
 
-        adm = parts[0] if len(parts) > 0 else None
-        pin = parts[1] if len(parts) > 1 else None
-
-        student = SchoolStudent.objects.filter(admission_number=adm).first()
-
         # =========================
-        # STEP 2: CHECK STUDENT
+        # STEP 2
         # =========================
         if len(parts) == 1:
 
@@ -362,15 +386,17 @@ def ussd_callback(request):
             return HttpResponse("CON Enter PIN", content_type="text/plain")
 
         # =========================
-        # STEP 3: REGISTER / LOGIN
+        # STEP 3 (REGISTER / LOGIN)
         # =========================
         if len(parts) == 2:
 
             if not student:
                 return HttpResponse("END Invalid admission number", content_type="text/plain")
 
+            # REGISTER PIN
             if not student.is_ussd_registered:
-                if len(pin) != 4 or not pin.isdigit():
+
+                if not pin or len(pin) != 4 or not pin.isdigit():
                     return HttpResponse("END PIN must be 4 digits", content_type="text/plain")
 
                 student.pin = make_password(pin)
@@ -379,17 +405,21 @@ def ussd_callback(request):
 
                 return HttpResponse("END PIN created. Dial again.", content_type="text/plain")
 
-            if not check_password(pin, student.pin):
+            # LOGIN
+            if not is_authenticated(student, pin):
                 return HttpResponse("END Wrong PIN", content_type="text/plain")
 
-            return HttpResponse(f"CON Welcome {student.full_name}\n1. Vote", content_type="text/plain")
+            return HttpResponse(
+                f"CON Welcome {student.full_name}\n1. Vote",
+                content_type="text/plain"
+            )
 
         # =========================
-        # STEP 4: POSITIONS
+        # STEP 4 (POSITIONS)
         # =========================
         if len(parts) == 3:
 
-            if not student or not check_password(pin, student.pin):
+            if not is_authenticated(student, pin):
                 return HttpResponse("END Auth failed", content_type="text/plain")
 
             positions = Position.objects.all().order_by("id")
@@ -401,15 +431,17 @@ def ussd_callback(request):
             return HttpResponse(msg, content_type="text/plain")
 
         # =========================
-        # STEP 5: CANDIDATES
+        # STEP 5 (CANDIDATES)
         # =========================
         if len(parts) == 4:
 
-            pos_index = int(parts[2])
+            if not is_authenticated(student, pin):
+                return HttpResponse("END Auth failed", content_type="text/plain")
 
+            pos_index = safe_int(parts[2])
             positions = list(Position.objects.all().order_by("id"))
 
-            if pos_index < 1 or pos_index > len(positions):
+            if not pos_index or pos_index < 1 or pos_index > len(positions):
                 return HttpResponse("END Invalid position", content_type="text/plain")
 
             position = positions[pos_index - 1]
@@ -423,28 +455,31 @@ def ussd_callback(request):
             return HttpResponse(msg, content_type="text/plain")
 
         # =========================
-        # STEP 6: VOTE
+        # STEP 6 (VOTE)
         # =========================
         if len(parts) >= 5:
 
-            pos_index = int(parts[2])
-            cand_index = int(parts[3])
+            if not is_authenticated(student, pin):
+                return HttpResponse("END Auth failed", content_type="text/plain")
+
+            pos_index = safe_int(parts[2])
+            cand_index = safe_int(parts[3])
 
             positions = list(Position.objects.all().order_by("id"))
 
-            if pos_index < 1 or pos_index > len(positions):
+            if not pos_index or pos_index < 1 or pos_index > len(positions):
                 return HttpResponse("END Invalid position", content_type="text/plain")
 
             position = positions[pos_index - 1]
 
             candidates = list(Candidate.objects.filter(position=position).order_by("id"))
 
-            if cand_index < 1 or cand_index > len(candidates):
+            if not cand_index or cand_index < 1 or cand_index > len(candidates):
                 return HttpResponse("END Invalid candidate", content_type="text/plain")
 
             candidate = candidates[cand_index - 1]
 
-            if Vote.objects.filter(phone=phone, position=position).exists():
+            if Vote.objects.filter(user=student.user, position=position).exists():
                 return HttpResponse("END Already voted", content_type="text/plain")
 
             Vote.objects.create(
@@ -454,10 +489,13 @@ def ussd_callback(request):
                 candidate=candidate
             )
 
-            return HttpResponse(f"END Vote submitted for {candidate.name}", content_type="text/plain")
+            return HttpResponse(
+                f"END Vote submitted for {candidate.name}",
+                content_type="text/plain"
+            )
 
         return HttpResponse("END Invalid request", content_type="text/plain")
 
     except Exception as e:
-        print("USSD ERROR:", e)
+        print("USSD ERROR:", str(e))
         return HttpResponse("END System error. Try again.", content_type="text/plain")
