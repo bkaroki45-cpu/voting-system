@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 import dj_database_url
 import cloudinary
-
+from dotenv import load_dotenv
+load_dotenv()
 
 # ------------------------------
 # Base directory
