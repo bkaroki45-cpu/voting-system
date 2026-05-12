@@ -317,6 +317,11 @@ def final_results_page(request):
 
 
 
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from .models import Position, Candidate, Vote
+
+
 @csrf_exempt
 def ussd_callback(request):
 
@@ -325,53 +330,90 @@ def ussd_callback(request):
 
     response = ""
 
-    # STEP 1: main menu
+    # ------------------------
+    # STEP 1: MAIN MENU
+    # ------------------------
     if text == "":
         response = "CON Welcome to E-Voting\n1. Vote"
 
-    # STEP 2: show positions
+    # ------------------------
+    # STEP 2: SHOW POSITIONS
+    # ------------------------
     elif text == "1":
-        positions = Position.objects.all()
+
+        positions = list(Position.objects.all().order_by("id"))
 
         response = "CON Select Position\n"
         for i, p in enumerate(positions, 1):
             response += f"{i}. {p.name}\n"
 
-    # STEP 3: show candidates for position
+    # ------------------------
+    # STEP 3: SHOW CANDIDATES
+    # format: 1*positionNumber
+    # ------------------------
     elif len(text.split("*")) == 2:
 
         parts = text.split("*")
-        position_index = int(parts[1]) - 1
 
-        position = list(Position.objects.all())[position_index]
-        candidates = Candidate.objects.filter(position=position)
+        try:
+            position_index = int(parts[1]) - 1
+            positions = list(Position.objects.all().order_by("id"))
 
-        response = "CON Select Candidate\n"
-        for i, c in enumerate(candidates, 1):
-            response += f"{i}. {c.name}\n"
+            if position_index < 0 or position_index >= len(positions):
+                return HttpResponse("END Invalid position selection", content_type="text/plain")
 
-    # STEP 4: vote
+            position = positions[position_index]
+
+            candidates = list(Candidate.objects.filter(position=position).order_by("id"))
+
+            if not candidates:
+                return HttpResponse("END No candidates found", content_type="text/plain")
+
+            response = "CON Select Candidate\n"
+            for i, c in enumerate(candidates, 1):
+                response += f"{i}. {c.name}\n"
+
+        except:
+            response = "END Invalid request"
+
+    # ------------------------
+    # STEP 4: VOTE
+    # format: 1*position*candidate
+    # ------------------------
     elif len(text.split("*")) == 3:
 
         parts = text.split("*")
 
-        position_index = int(parts[1]) - 1
-        candidate_index = int(parts[2]) - 1
+        try:
+            position_index = int(parts[1]) - 1
+            candidate_index = int(parts[2]) - 1
 
-        position = list(Position.objects.all())[position_index]
-        candidates = list(Candidate.objects.filter(position=position))
+            positions = list(Position.objects.all().order_by("id"))
 
-        candidate = candidates[candidate_index]
+            if position_index < 0 or position_index >= len(positions):
+                return HttpResponse("END Invalid position", content_type="text/plain")
 
-        # prevent duplicate voting per phone + position (important)
-        if Vote.objects.filter(phone=phone, position=position).exists():
-            response = "END You already voted for this position"
-        else:
-            Vote.objects.create(
-                phone=phone,
-                position=position,
-                candidate=candidate
-            )
-            response = f"END Vote submitted for {candidate.name}"
+            position = positions[position_index]
+
+            candidates = list(Candidate.objects.filter(position=position).order_by("id"))
+
+            if candidate_index < 0 or candidate_index >= len(candidates):
+                return HttpResponse("END Invalid candidate", content_type="text/plain")
+
+            candidate = candidates[candidate_index]
+
+            # prevent double voting
+            if Vote.objects.filter(phone=phone, position=position).exists():
+                response = "END You already voted for this position"
+            else:
+                Vote.objects.create(
+                    phone=phone,
+                    position=position,
+                    candidate=candidate
+                )
+                response = f"END Vote submitted for {candidate.name}"
+
+        except:
+            response = "END Error processing vote"
 
     return HttpResponse(response, content_type="text/plain")
