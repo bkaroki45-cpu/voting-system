@@ -5,65 +5,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voting Closed - Mathenge Voting</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
     <link rel="stylesheet" href="{% static 'css/closed.css' %}">
 </head>
 <body>
 
-<div class="message-container">
+    <!-- Top Navigation -->
+    <header class="topbar">
+        <div class="logo-section">
+            <div class="logo-box">
+                <span>V</span>
+            </div>
+            <h1>Mathenge Voting System</h1>
+        </div>
 
-    <h2>🛑 Voting Status</h2>
+        <a href="{% url 'home' %}" class="nav-btn">
+            Back to Home
+        </a>
+    </header>
 
-    <!-- Message from view -->
-    <p>{{ message }}</p>
+    <!-- Main Content -->
+    <main class="main-container">
 
-    {% if session %}
+        <div class="status-card">
 
-        <div class="session-info">
-            <h3>📅 Voting Session Details</h3>
+            <!-- Header -->
+            <div class="status-header">
 
-            <p>
-                <strong>Status:</strong>
-                {% if session.active %}
-                    Active (Currently Closed or Outside Time Window)
-                {% else %}
-                    Inactive
-                {% endif %}
-            </p>
+                <div class="status-icon">
+                    <div class="lock-circle"></div>
+                </div>
 
-            <p>
-                <strong>Start Date & Time:</strong><br>
-                {{ session.start_datetime|date:"D, d M Y" }} at {{ session.start_datetime|time:"h:i A" }}
-            </p>
+                <div>
+                    <h2>Voting Status</h2>
+                    <p class="subtitle">{{ message }}</p>
+                </div>
 
-            <p>
-                <strong>End Date & Time:</strong><br>
-                {{ session.end_datetime|date:"D, d M Y" }} at {{ session.end_datetime|time:"h:i A" }}
-            </p>
+            </div>
 
-            <p>
-                <strong>Current Status:</strong>
-                {% now "U" as now_ts %}
-                {% if session.start_datetime|date:"U" > now_ts %}
-                    ⏳ Not started yet
-                {% elif session.end_datetime|date:"U" < now_ts %}
-                    ❌ Already ended
-                {% else %}
-                    ⚠️ Currently active (but blocked by system rules)
-                {% endif %}
-            </p>
+            <div class="divider"></div>
+
+            {% if session %}
+
+            <!-- Status Banner -->
+            <div class="status-banner">
+
+                <div class="status-dot"></div>
+
+                <div>
+                    <span class="label">Status:</span>
+
+                    {% if session.active %}
+                        Active (Currently Closed or Outside Time Window)
+                    {% else %}
+                        Inactive
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline">
+
+                <!-- Start -->
+                <div class="timeline-item">
+
+                    <div class="timeline-marker"></div>
+
+                    <div class="timeline-content">
+                        <h4>Start Date & Time</h4>
+
+                        <p>
+                            {{ session.start_datetime|date:"D, d M Y" }}
+                            at
+                            {{ session.start_datetime|time:"h:i A" }}
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- End -->
+                <div class="timeline-item">
+
+                    <div class="timeline-marker"></div>
+
+                    <div class="timeline-content">
+                        <h4>End Date & Time</h4>
+
+                        <p>
+                            {{ session.end_datetime|date:"D, d M Y" }}
+                            at
+                            {{ session.end_datetime|time:"h:i A" }}
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Current -->
+                <div class="timeline-item">
+
+                    <div class="timeline-marker"></div>
+
+                    <div class="timeline-content">
+                        <h4>Current Status</h4>
+
+                        <p>
+                            {% now "U" as now_ts %}
+
+                            {% if session.start_datetime|date:"U" > now_ts %}
+                                Not started yet
+                            {% elif session.end_datetime|date:"U" < now_ts %}
+                                Already ended
+                            {% else %}
+                                Currently active (blocked by system rules)
+                            {% endif %}
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+                <div class="empty-session">
+                    <p>No active voting session found.</p>
+                </div>
+
+            {% endif %}
+
+            <!-- Buttons -->
+            <div class="button-group">
+
+                <a href="{% url 'home' %}" class="btn btn-outline">
+                    Back to Home
+                </a>
+
+                <a href="{% url 'final_results_page' %}" class="btn btn-primary">
+                    View Final Results
+                </a>
+
+            </div>
 
         </div>
 
-    {% else %}
-        <p><em>No active voting session found.</em></p>
-    {% endif %}
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2026 Mathenge Voting System. All rights reserved.</p>
+        </footer>
 
-    <div class="buttons">
-        <a href="{% url 'home' %}" class="back-btn">🏠 Back to Home</a>
-        <a href="{% url 'final_results_page' %}" class="back-btn">🏆 View Final Results</a>
-    </div>
-
-</div>
+    </main>
 
 </body>
 </html>
