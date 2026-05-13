@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 import csv
 from django.urls import path
+from django.utils.html import format_html
 
 from .models import VotingSession, SchoolStudent, Position, Candidate, Vote, Comment
 
@@ -93,7 +94,11 @@ class VotingSessionAdmin(admin.ModelAdmin):
     actions = [reset_election]
 
     def export_link(self, obj):
-        return f"/admin/{obj._meta.app_label}/votingsession/export-results/{obj.id}/"
+        return format_html(
+            '<a href="{}" target="_blank" style="color:#00bcd4; font-weight:bold;">⬇ Export Results</a>',
+            f"/admin/{obj._meta.app_label}/votingsession/export-results/{obj.id}/"
+        )
+
     export_link.short_description = "Export Results"
 
     def get_urls(self):
