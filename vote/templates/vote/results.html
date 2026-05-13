@@ -4,30 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <title>Election Results</title>
+
     <link rel="stylesheet" href="{% static 'css/results.css' %}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Font Awesome -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer" />
-
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
 
 <div class="container">
 
     <h1 class="title">
-        <i class="fa-solid fa-square-poll-vertical"></i>
-        Election Results
+        <i class="fa-solid fa-chart-column"></i>
+        Live Election Results
     </h1>
 
     {% if voting_message %}
         <div class="alert-message">
-            <i class="fa-solid fa-circle-exclamation"></i>
+            <i class="fa-solid fa-triangle-exclamation"></i>
             {{ voting_message }}
         </div>
     {% endif %}
@@ -41,7 +37,6 @@
         </div>
 
         <span id="time"></span>
-
     </div>
 
     <script>
@@ -53,7 +48,7 @@
 
             if (distance <= 0) {
                 clearInterval(countdown);
-                document.getElementById("time").innerHTML = "Voting is closed";
+                document.getElementById("time").innerHTML = "Voting Closed";
             } else {
                 const hours = Math.floor((distance % (1000*60*60*24))/(1000*60*60));
                 const minutes = Math.floor((distance % (1000*60*60))/(1000*60));
@@ -71,32 +66,12 @@
         {% for position in results %}
         <div class="position-card">
 
-            <div class="position-header">
-                <h2>{{ position.position }}</h2>
-
-                <div class="position-badge">
-                    <i class="fa-solid fa-award"></i>
-                    Official Results
-                </div>
-            </div>
+            <h2>{{ position.position }}</h2>
 
             <div class="candidates">
 
                 {% for candidate in position.candidates %}
-
-                <div class="candidate-card {% if forloop.first %}winner-card{% else %}runner-card{% endif %}">
-
-                    <div class="status-badge">
-
-                        {% if forloop.first %}
-                            <i class="fa-solid fa-trophy"></i>
-                            Winner
-                        {% else %}
-                            <i class="fa-solid fa-medal"></i>
-                            Runner Up
-                        {% endif %}
-
-                    </div>
+                <div class="candidate-card">
 
                     {% if candidate.photo %}
                         <img src="{{ candidate.photo }}" alt="{{ candidate.name }}">
@@ -104,36 +79,31 @@
                         <img src="{% static 'images/default.png' %}" alt="default">
                     {% endif %}
 
-                    <h3>
-                        {{ candidate.name }}
+                    <h3>{{ candidate.name }}</h3>
 
-                        {% if candidate.party %}
-                            <p class="party-text">
-                                <i class="fa-solid fa-building-columns"></i>
-                                Party: {{ candidate.party }}
-                            </p>
-                        {% endif %}
-                    </h3>
+                    {% if candidate.party %}
+                        <p class="party-text">
+                            <i class="fa-solid fa-landmark"></i>
+                            {{ candidate.party }}
+                        </p>
+                    {% endif %}
 
                     <div class="votes">
-
                         <span>
                             <i class="fa-solid fa-check-to-slot"></i>
                             {{ candidate.votes }} votes
                         </span>
 
                         <span>{{ candidate.percentage }}%</span>
-
                     </div>
 
                     <div class="progress-bar">
-                        <div class="progress {% if forloop.first %}winner-progress{% else %}runner-progress{% endif %}"
+                        <div class="progress"
                              style="width: {{ candidate.percentage }}%;">
                         </div>
                     </div>
 
                 </div>
-
                 {% endfor %}
 
             </div>
@@ -148,17 +118,15 @@
     {% endif %}
 
     <div class="bottom-buttons">
-
         <a href="{% url 'home' %}" class="back-btn">
             <i class="fa-solid fa-house"></i>
             Home
         </a>
 
-        <a href="{% url 'final_results_page' %}" class="back-btn primary-btn">
-            <i class="fa-solid fa-chart-column"></i>
+        <a href="{% url 'final_results_page' %}" class="back-btn">
+            <i class="fa-solid fa-chart-simple"></i>
             Final Results
         </a>
-
     </div>
 
 </div>
