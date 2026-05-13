@@ -284,7 +284,7 @@ def final_results_page(request):
         .order_by('-start_datetime').first()
 
     if not session:
-        return redirect('results_page')
+        return redirect('final_results_page')
 
     # If voting still ongoing
     if session.is_open():
