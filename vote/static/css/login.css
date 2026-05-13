@@ -15,75 +15,28 @@ body{
     justify-content: center;
     align-items: center;
 
-    background:
-        linear-gradient(rgba(7, 15, 43, 0.84), rgba(7, 15, 43, 0.88)),
-        linear-gradient(135deg, #4f46e5, #2563eb);
+    background: #f5f7fb;
 
-    overflow: hidden;
-    position: relative;
-}
-
-/* ================= BACKGROUND EFFECTS ================= */
-
-body::before{
-    content: '';
-    position: absolute;
-
-    width: 450px;
-    height: 450px;
-
-    background: rgba(255,255,255,0.05);
-
-    border-radius: 50%;
-
-    top: -160px;
-    left: -120px;
-
-    filter: blur(20px);
-}
-
-body::after{
-    content: '';
-    position: absolute;
-
-    width: 350px;
-    height: 350px;
-
-    background: rgba(255,255,255,0.04);
-
-    border-radius: 50%;
-
-    bottom: -140px;
-    right: -100px;
-
-    filter: blur(20px);
+    padding: 20px;
 }
 
 /* ================= FORM CONTAINER ================= */
 
 .form-container{
-    width: 90%;
-    max-width: 470px;
+    width: 100%;
+    max-width: 460px;
 
-    background: rgba(255,255,255,0.08);
+    background: white;
 
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    padding: 45px 38px;
 
-    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 22px;
 
-    border-radius: 30px;
+    border: 1px solid #e2e8f0;
 
-    padding: 50px 40px;
+    box-shadow: 0 10px 30px rgba(15,23,42,0.06);
 
-    position: relative;
-    z-index: 10;
-
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.35),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-
-    animation: fadeIn 0.7s ease;
+    animation: fadeUp 0.4s ease;
 }
 
 /* ================= TITLE ================= */
@@ -91,12 +44,12 @@ body::after{
 .form-container h2{
     text-align: center;
 
-    color: white;
-
-    font-size: 38px;
+    font-size: 36px;
     font-weight: 800;
 
-    margin-bottom: 35px;
+    color: #0f172a;
+
+    margin-bottom: 30px;
 
     letter-spacing: -1px;
 }
@@ -104,22 +57,20 @@ body::after{
 /* ================= ERROR MESSAGE ================= */
 
 .error-message{
-    background: rgba(239,68,68,0.12);
+    background: #fef2f2;
 
-    border: 1px solid rgba(239,68,68,0.25);
+    color: #dc2626;
 
-    color: #fecaca;
+    border: 1px solid #fecaca;
 
-    padding: 15px 18px;
+    padding: 14px 16px;
 
-    border-radius: 14px;
+    border-radius: 12px;
 
     margin-bottom: 22px;
 
     font-size: 14px;
     font-weight: 600;
-
-    text-align: center;
 }
 
 /* ================= FORM ================= */
@@ -136,10 +87,10 @@ label{
     margin-bottom: 10px;
     margin-top: 18px;
 
-    color: rgba(255,255,255,0.90);
+    color: #334155;
 
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
 }
 
 /* ================= INPUTS ================= */
@@ -147,37 +98,35 @@ label{
 input{
     width: 100%;
 
-    padding: 16px 18px;
+    padding: 15px 16px;
 
-    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
 
-    border-radius: 16px;
+    border: 1px solid #dbe2ea;
 
-    background: rgba(255,255,255,0.08);
-
-    color: white;
+    background: #ffffff;
 
     font-size: 15px;
 
+    color: #0f172a;
+
     outline: none;
 
-    transition: 0.25s ease;
+    transition: 0.2s ease;
 }
 
-/* INPUT PLACEHOLDER */
+/* PLACEHOLDER */
 
 input::placeholder{
-    color: rgba(255,255,255,0.45);
+    color: #94a3b8;
 }
 
-/* INPUT FOCUS */
+/* FOCUS */
 
 input:focus{
-    border-color: #60a5fa;
+    border-color: #2563eb;
 
-    background: rgba(255,255,255,0.12);
-
-    box-shadow: 0 0 0 4px rgba(96,165,250,0.12);
+    box-shadow: 0 0 0 4px rgba(37,99,235,0.10);
 }
 
 /* ================= BUTTON ================= */
@@ -185,14 +134,14 @@ input:focus{
 button{
     width: 100%;
 
-    margin-top: 30px;
+    margin-top: 28px;
 
-    padding: 16px;
+    padding: 15px;
 
     border: none;
-    border-radius: 16px;
+    border-radius: 14px;
 
-    background: linear-gradient(to right, #4f46e5, #2563eb);
+    background: #2563eb;
 
     color: white;
 
@@ -201,82 +150,54 @@ button{
 
     cursor: pointer;
 
-    transition: 0.25s ease;
+    transition: 0.2s ease;
 
-    position: relative;
-
-    overflow: hidden;
-
-    box-shadow: 0 12px 30px rgba(37,99,235,0.35);
+    box-shadow: 0 10px 25px rgba(37,99,235,0.20);
 }
 
 /* BUTTON HOVER */
 
 button:hover{
-    transform: translateY(-3px);
+    background: #1d4ed8;
 
-    box-shadow: 0 18px 35px rgba(37,99,235,0.45);
-}
-
-/* BUTTON LIGHT EFFECT */
-
-button::after{
-    content: '';
-
-    position: absolute;
-
-    top: 0;
-    left: -120px;
-
-    width: 100px;
-    height: 100%;
-
-    background: rgba(255,255,255,0.14);
-
-    transform: skewX(-25deg);
-
-    transition: 0.6s;
-}
-
-button:hover::after{
-    left: 120%;
+    transform: translateY(-2px);
 }
 
 /* ================= BOTTOM TEXT ================= */
 
 .form-container p{
+    margin-top: 24px;
+
     text-align: center;
 
-    margin-top: 25px;
+    color: #64748b;
 
-    color: rgba(255,255,255,0.75);
-
-    font-size: 15px;
+    font-size: 14px;
 }
 
-/* ================= LINK ================= */
+/* ================= LINKS ================= */
 
 .form-container a{
-    color: #93c5fd;
+    color: #2563eb;
 
     text-decoration: none;
 
     font-weight: 700;
 
-    transition: 0.25s ease;
+    transition: 0.2s ease;
 }
 
 .form-container a:hover{
-    color: white;
+    color: #1d4ed8;
 }
 
 /* ================= ANIMATION ================= */
 
-@keyframes fadeIn{
+@keyframes fadeUp{
 
     from{
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(10px);
     }
 
     to{
@@ -291,19 +212,11 @@ button:hover::after{
 @media(max-width: 768px){
 
     .form-container{
-        padding: 40px 25px;
+        padding: 38px 24px;
     }
 
     .form-container h2{
-        font-size: 32px;
-    }
-
-    input{
-        padding: 15px;
-    }
-
-    button{
-        padding: 15px;
+        font-size: 30px;
     }
 
 }
