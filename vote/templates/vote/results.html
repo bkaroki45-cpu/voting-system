@@ -4,37 +4,102 @@
 <head>
     <meta charset="UTF-8">
     <title>Election Results</title>
-    <link rel="stylesheet" href="{% static 'css/results.css' %}">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'css/results.css' %}">
 </head>
 <body>
 
+<!-- ================= NAVBAR ================= -->
+
+<header class="topbar">
+
+    <div class="logo-section">
+
+        <div class="logo-box">
+            V
+        </div>
+
+        <div>
+            <h1>Mathenge Voting System</h1>
+            <p>Official Election Results Portal</p>
+        </div>
+
+    </div>
+
+    <div class="nav-buttons">
+
+        <a href="{% url 'home' %}" class="nav-btn">
+            Home
+        </a>
+
+        <a href="{% url 'final_results_page' %}" class="nav-btn primary-nav">
+            Final Results
+        </a>
+
+    </div>
+
+</header>
+
+<!-- ================= MAIN ================= -->
+
 <div class="container">
 
-    <h1 class="title">🗳️ Election Results</h1>
+    <!-- HEADER -->
+    <div class="results-header">
 
+        <div class="header-icon">
+            <div class="ballot-icon"></div>
+        </div>
+
+        <div>
+            <h2>Final Election Results</h2>
+            <p>The election results have been verified and officially published.</p>
+        </div>
+
+    </div>
+
+    <!-- ALERT -->
     {% if voting_message %}
         <div class="alert-message">
-            ⚠️ {{ voting_message }}
+            {{ voting_message }}
         </div>
     {% endif %}
 
+    <!-- COUNTDOWN -->
     {% if session_end %}
     <div id="countdown" class="countdown-timer">
-        Voting ends in: <span id="time"></span>
+
+        <div class="count-left">
+            <span class="count-label">Voting Ends In</span>
+        </div>
+
+        <div class="count-right">
+            <span id="time"></span>
+        </div>
+
     </div>
 
     <script>
         const endTime = new Date("{{ session_end|date:'c' }}").getTime();
 
         const countdown = setInterval(function () {
+
             const now = new Date().getTime();
             const distance = endTime - now;
 
             if (distance <= 0) {
+
                 clearInterval(countdown);
-                document.getElementById("time").innerHTML = "Voting is closed";
+                document.getElementById("time").innerHTML = "Voting Closed";
+
             } else {
+
                 const hours = Math.floor((distance % (1000*60*60*24))/(1000*60*60));
                 const minutes = Math.floor((distance % (1000*60*60))/(1000*60));
                 const seconds = Math.floor((distance % (1000*60))/1000);
@@ -42,57 +107,151 @@
                 document.getElementById("time").innerHTML =
                     hours + "h " + minutes + "m " + seconds + "s";
             }
+
         }, 1000);
     </script>
     {% endif %}
 
+    <!-- RESULTS -->
     {% if results %}
 
         {% for position in results %}
+
         <div class="position-card">
 
-            <h2>{{ position.position }}</h2>
+            <div class="position-header">
+                <h3>{{ position.position }}</h3>
+                <span class="position-badge">Election Position</span>
+            </div>
 
             <div class="candidates">
 
                 {% for candidate in position.candidates %}
-                <div class="candidate-card">
 
-                    {% if candidate.photo %}
-                        <img src="{{ candidate.photo }}" alt="{{ candidate.name }}">
-                    {% else %}
-                        <img src="{% static 'images/default.png' %}" alt="default">
-                    {% endif %}
+                <div class="candidate-card {% if forloop.first %}winner-card{% else %}runner-card{% endif %}">
 
-                    <h3>
-                        {{ candidate.name }}
-                        {% if candidate.party %}
-                            <p class="party-text">Party: {{ candidate.party }}</p>
+                    <!-- STATUS -->
+                    <div class="candidate-status">
+
+                        {% if forloop.first %}
+                            Winner
+                        {% else %}
+                            Runner-Up
                         {% endif %}
-                    </h3>
 
-                    <div class="votes">
-                        <span>{{ candidate.votes }} votes</span>
-                        <span>{{ candidate.percentage }}%</span>
                     </div>
 
-                    <div class="progress-bar">
-                        <div class="progress" style="width: {{ candidate.percentage }}%;"></div>
+                    <!-- CANDIDATE IMAGE -->
+                    <div class="candidate-image">
+
+                        {% if candidate.photo %}
+                            <img src="{{ candidate.photo }}" alt="{{ candidate.name }}">
+                        {% else %}
+                            <img src="{% static 'images/default.png' %}" alt="default">
+                        {% endif %}
+
+                    </div>
+
+                    <!-- INFO -->
+                    <div class="candidate-info">
+
+                        <h4>{{ candidate.name }}</h4>
+
+                        {% if candidate.party %}
+                            <p class="party-text">
+                                Party: <span>{{ candidate.party }}</span>
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+                    <!-- VOTES -->
+                    <div class="votes-section">
+
+                        <div class="votes">
+
+                            <span>{{ candidate.votes }} votes</span>
+
+                            <span>{{ candidate.percentage }}%</span>
+
+                        </div>
+
+                        <div class="progress-bar">
+
+                            <div class="progress {% if forloop.first %}winner-progress{% else %}runner-progress{% endif %}"
+                                 style="width: {{ candidate.percentage }}%;">
+                            </div>
+
+                        </div>
+
                     </div>
 
                 </div>
+
                 {% endfor %}
 
             </div>
+
+            <!-- WINNER SECTION -->
+            {% if position.candidates %}
+
+            <div class="winner-section">
+
+                <div class="winner-left">
+
+                    <div class="winner-icon"></div>
+
+                    <div>
+                        <h4>Election Winner</h4>
+                        <p>Congratulations to the leading candidate.</p>
+                    </div>
+
+                </div>
+
+                <div class="winner-right">
+
+                    {% with position.candidates.0 as winner %}
+
+                        {% if winner.photo %}
+                            <img src="{{ winner.photo }}" alt="{{ winner.name }}">
+                        {% else %}
+                            <img src="{% static 'images/default.png' %}" alt="default">
+                        {% endif %}
+
+                        <div>
+                            <h5>{{ winner.name }}</h5>
+
+                            {% if winner.party %}
+                                <p>{{ winner.party }}</p>
+                            {% endif %}
+                        </div>
+
+                    {% endwith %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
         </div>
+
         {% endfor %}
 
     {% else %}
-        <p class="no-results">No results yet.</p>
+
+        <div class="no-results">
+            No election results available yet.
+        </div>
+
     {% endif %}
 
-    <a href="{% url 'home' %}" class="back-btn">⬅ Home</a>
-    <a href="{% url 'final_results_page' %}" class="back-btn">🏆 Final Results</a>
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>
+            These election results are final and have been verified by the election committee.
+        </p>
+    </footer>
 
 </div>
 
