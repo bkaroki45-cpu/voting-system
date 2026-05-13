@@ -6,181 +6,76 @@
 
 body{
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #eef2ff, #f8fafc);
+    background: #f4f7fb;
+    color: #1e293b;
     min-height: 100vh;
-    color: #0f172a;
 }
 
-/* ================= NAVBAR ================= */
-
-.topbar{
-    width: 100%;
-    background: linear-gradient(to right, #08152f, #0f172a);
-    padding: 18px 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
-}
-
-.logo-section{
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.logo-box{
-    width: 48px;
-    height: 48px;
-    background: #2563eb;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 22px;
-    font-weight: 800;
-}
-
-.logo-section h1{
-    color: white;
-    font-size: 23px;
-    font-weight: 700;
-}
-
-.logo-section p{
-    color: rgba(255,255,255,0.65);
-    font-size: 14px;
-    margin-top: 3px;
-}
-
-.nav-buttons{
-    display: flex;
-    gap: 15px;
-}
-
-.nav-btn{
-    text-decoration: none;
-    color: white;
-    padding: 12px 22px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.15);
-    transition: 0.3s ease;
-    font-weight: 600;
-}
-
-.nav-btn:hover{
-    background: rgba(255,255,255,0.08);
-}
-
-.primary-nav{
-    background: #2563eb;
-    border: none;
-}
-
-.primary-nav:hover{
-    background: #1d4ed8;
-}
-
-/* ================= MAIN CONTAINER ================= */
+/* ================= CONTAINER ================= */
 
 .container{
-    width: 100%;
+    width: 95%;
     max-width: 1450px;
-    margin: 50px auto;
-    padding: 0 25px;
+    margin: 40px auto;
 }
 
-/* ================= HEADER ================= */
+/* ================= TITLE ================= */
 
-.results-header{
-    background: white;
-    border-radius: 30px;
-    padding: 40px;
-    display: flex;
-    align-items: center;
-    gap: 25px;
-    margin-bottom: 30px;
-    box-shadow: 0 15px 50px rgba(15,23,42,0.08);
-}
-
-.header-icon{
-    width: 90px;
-    height: 90px;
-    background: #eff6ff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.ballot-icon{
-    width: 34px;
-    height: 34px;
-    border: 4px solid #2563eb;
-    border-radius: 8px;
-    position: relative;
-}
-
-.ballot-icon::before{
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 4px;
-    background: #2563eb;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 10px;
-}
-
-.results-header h2{
-    font-size: 46px;
+.title{
+    font-size: 48px;
     font-weight: 800;
+    margin-bottom: 30px;
     color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 18px;
 }
 
-.results-header p{
-    margin-top: 10px;
-    font-size: 18px;
-    color: #64748b;
+.title i{
+    color: #2563eb;
 }
 
 /* ================= ALERT ================= */
 
 .alert-message{
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #fdba74;
-    padding: 18px 25px;
+    background: #fff8e6;
+    border: 1px solid #facc15;
+    color: #854d0e;
+    padding: 18px 22px;
     border-radius: 16px;
     margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     font-weight: 600;
 }
 
-/* ================= COUNTDOWN ================= */
+/* ================= TIMER ================= */
 
 .countdown-timer{
     background: white;
-    border-radius: 20px;
-    padding: 22px 30px;
-    margin-bottom: 35px;
+    border-radius: 18px;
+    padding: 20px 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 25px rgba(15,23,42,0.06);
+
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 10px 35px rgba(15,23,42,0.06);
 }
 
-.count-label{
-    font-size: 18px;
+.timer-left{
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 700;
     color: #0f172a;
 }
 
-.count-right{
+#time{
     background: #2563eb;
     color: white;
-    padding: 12px 22px;
+    padding: 10px 18px;
     border-radius: 12px;
     font-weight: 700;
 }
@@ -189,32 +84,38 @@ body{
 
 .position-card{
     background: white;
-    border-radius: 30px;
+    border-radius: 28px;
     padding: 35px;
     margin-bottom: 35px;
-    box-shadow: 0 15px 50px rgba(15,23,42,0.08);
+    box-shadow: 0 12px 40px rgba(15,23,42,0.07);
 }
+
+/* ================= POSITION HEADER ================= */
 
 .position-header{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 35px;
+    margin-bottom: 30px;
 }
 
-.position-header h3{
-    font-size: 36px;
-    color: #2563eb;
+.position-header h2{
+    font-size: 34px;
+    color: #0f172a;
     font-weight: 800;
 }
 
 .position-badge{
     background: #eff6ff;
     color: #2563eb;
-    padding: 10px 18px;
+    padding: 10px 16px;
     border-radius: 12px;
     font-size: 14px;
     font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 /* ================= CANDIDATES ================= */
@@ -228,133 +129,136 @@ body{
 /* ================= CARD ================= */
 
 .candidate-card{
-    border-radius: 28px;
-    padding: 30px;
     position: relative;
+    border-radius: 24px;
+    padding: 30px;
+    transition: 0.25s ease;
     overflow: hidden;
-    transition: 0.3s ease;
 }
 
 .candidate-card:hover{
-    transform: translateY(-6px);
+    transform: translateY(-4px);
 }
+
+/* ================= WINNER ================= */
 
 .winner-card{
-    background: linear-gradient(135deg, #f0fdf4, #f7fff9);
+    background: #f6fff8;
     border: 2px solid #22c55e;
-    box-shadow: 0 15px 35px rgba(34,197,94,0.12);
+    box-shadow: 0 10px 25px rgba(34,197,94,0.10);
 }
+
+/* ================= RUNNER ================= */
 
 .runner-card{
-    background: linear-gradient(135deg, #fff5f5, #fffafa);
-    border: 2px solid #f87171;
-    box-shadow: 0 15px 35px rgba(248,113,113,0.10);
+    background: #fff7f7;
+    border: 2px solid #ef4444;
+    box-shadow: 0 10px 25px rgba(239,68,68,0.08);
 }
 
-/* ================= STATUS ================= */
+/* ================= BADGE ================= */
 
-.candidate-status{
+.status-badge{
     position: absolute;
     top: 18px;
-    left: 18px;
-    padding: 10px 18px;
+    right: 18px;
+
+    padding: 10px 14px;
     border-radius: 12px;
+
     font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.winner-card .candidate-status{
+.winner-card .status-badge{
     background: #22c55e;
     color: white;
 }
 
-.runner-card .candidate-status{
+.runner-card .status-badge{
     background: #ef4444;
     color: white;
 }
 
 /* ================= IMAGE ================= */
 
-.candidate-image{
-    width: 160px;
-    height: 160px;
+.candidate-card img{
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    overflow: hidden;
-    margin: 30px auto 25px;
-    border: 5px solid white;
-}
-
-.winner-card .candidate-image{
-    box-shadow: 0 0 0 4px #22c55e;
-}
-
-.runner-card .candidate-image{
-    box-shadow: 0 0 0 4px #f87171;
-}
-
-.candidate-image img{
-    width: 100%;
-    height: 100%;
     object-fit: cover;
+
+    display: block;
+    margin: 30px auto 22px;
 }
 
-/* ================= INFO ================= */
+.winner-card img{
+    border: 4px solid #22c55e;
+}
 
-.candidate-info{
+.runner-card img{
+    border: 4px solid #ef4444;
+}
+
+/* ================= NAME ================= */
+
+.candidate-card h3{
     text-align: center;
-}
-
-.candidate-info h4{
-    font-size: 34px;
+    font-size: 30px;
     font-weight: 800;
-    margin-bottom: 10px;
     color: #0f172a;
 }
 
 .party-text{
-    font-size: 18px;
+    margin-top: 12px;
+    font-size: 16px;
     color: #64748b;
-}
+    font-weight: 500;
 
-.party-text span{
-    font-weight: 700;
-}
-
-.winner-card .party-text span{
-    color: #16a34a;
-}
-
-.runner-card .party-text span{
-    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 /* ================= VOTES ================= */
 
-.votes-section{
-    margin-top: 30px;
-}
-
 .votes{
+    margin-top: 30px;
+
     display: flex;
     justify-content: space-between;
-    margin-bottom: 12px;
-    font-size: 18px;
+    align-items: center;
+
+    font-size: 16px;
     font-weight: 700;
 }
 
+.votes span{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ================= PROGRESS ================= */
+
 .progress-bar{
     width: 100%;
-    height: 14px;
+    height: 12px;
     background: #e2e8f0;
-    border-radius: 20px;
+    border-radius: 30px;
     overflow: hidden;
+    margin-top: 15px;
 }
 
 .progress{
     height: 100%;
-    border-radius: 20px;
+    border-radius: 30px;
+    transition: width 1s ease;
 }
 
 .winner-progress{
@@ -362,157 +266,69 @@ body{
 }
 
 .runner-progress{
-    background: linear-gradient(to right, #f87171, #ef4444);
-}
-
-/* ================= WINNER SECTION ================= */
-
-.winner-section{
-    margin-top: 35px;
-    border: 2px solid #22c55e;
-    border-radius: 25px;
-    background: linear-gradient(135deg, #f0fdf4, #f8fff9);
-    padding: 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.winner-left{
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.winner-icon{
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: #22c55e;
-    position: relative;
-}
-
-.winner-icon::before{
-    content: '';
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    border: 4px solid white;
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg);
-    top: 18px;
-    left: 22px;
-}
-
-.winner-left h4{
-    font-size: 28px;
-    color: #15803d;
-    margin-bottom: 8px;
-}
-
-.winner-left p{
-    color: #64748b;
-    font-size: 17px;
-}
-
-.winner-right{
-    display: flex;
-    align-items: center;
-    gap: 18px;
-}
-
-.winner-right img{
-    width: 85px;
-    height: 85px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid #22c55e;
-}
-
-.winner-right h5{
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-.winner-right p{
-    font-size: 16px;
-    color: #15803d;
-    font-weight: 700;
+    background: linear-gradient(to right, #ef4444, #dc2626);
 }
 
 /* ================= NO RESULTS ================= */
 
 .no-results{
     background: white;
-    padding: 40px;
-    border-radius: 25px;
+    padding: 30px;
+    border-radius: 18px;
     text-align: center;
-    font-size: 20px;
+    font-size: 18px;
     color: #64748b;
-    box-shadow: 0 10px 40px rgba(15,23,42,0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
 }
 
-/* ================= FOOTER ================= */
+/* ================= BUTTONS ================= */
 
-.footer{
-    margin-top: 40px;
-    text-align: center;
-    color: #64748b;
-    padding-bottom: 30px;
-    font-size: 16px;
+.bottom-buttons{
+    margin-top: 30px;
+    display: flex;
+    gap: 18px;
+}
+
+.back-btn{
+    text-decoration: none;
+    padding: 15px 28px;
+    border-radius: 14px;
+    background: white;
+    color: #0f172a;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    box-shadow: 0 8px 25px rgba(15,23,42,0.06);
+    transition: 0.25s ease;
+}
+
+.back-btn:hover{
+    transform: translateY(-3px);
+}
+
+.primary-btn{
+    background: #2563eb;
+    color: white;
 }
 
 /* ================= RESPONSIVE ================= */
 
-@media(max-width: 992px){
+@media(max-width: 768px){
 
-    .topbar{
-        flex-direction: column;
-        gap: 20px;
-        padding: 25px;
-    }
-
-    .results-header{
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .results-header h2{
-        font-size: 36px;
+    .title{
+        font-size: 34px;
     }
 
     .position-header{
         flex-direction: column;
+        align-items: flex-start;
         gap: 15px;
-        align-items: flex-start;
-    }
-
-}
-
-@media(max-width: 768px){
-
-    .container{
-        padding: 0 15px;
-    }
-
-    .position-card{
-        padding: 25px;
-    }
-
-    .candidates{
-        grid-template-columns: 1fr;
-    }
-
-    .candidate-info h4{
-        font-size: 28px;
-    }
-
-    .winner-section{
-        flex-direction: column;
-        align-items: flex-start;
     }
 
     .countdown-timer{
@@ -521,14 +337,12 @@ body{
         text-align: center;
     }
 
-    .nav-buttons{
-        width: 100%;
+    .bottom-buttons{
         flex-direction: column;
     }
 
-    .nav-btn{
-        width: 100%;
-        text-align: center;
+    .back-btn{
+        justify-content: center;
     }
 
 }
