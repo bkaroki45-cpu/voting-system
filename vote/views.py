@@ -280,11 +280,14 @@ def final_results_page(request):
     # -----------------------------
     # ACTIVE SESSION
     # -----------------------------
-    session = VotingSession.objects.filter(active=True)\
-        .order_by('-start_datetime').first()
+    session = VotingSession.objects.order_by('-start_datetime').first()
 
     if not session:
-        return redirect('final_results_page')
+        return render(request, 'vote/final_results.html', {
+            "final_results": [],
+            "comments": [],
+            "error_message": "No voting session found."
+        })
 
     # If voting still ongoing
     if session.is_open():
