@@ -11,7 +11,7 @@ body{
     color: #1e293b;
 }
 
-/* ================= TOPBAR ================= */
+
 
 .topbar{
     width: 100%;
@@ -63,7 +63,7 @@ body{
     background: rgba(255,255,255,0.08);
 }
 
-/* ================= MAIN ================= */
+
 
 .main-container{
     width: 100%;
@@ -73,7 +73,7 @@ body{
     padding: 60px 20px;
 }
 
-/* ================= CARD ================= */
+
 
 .status-card{
     width: 100%;
@@ -84,7 +84,7 @@ body{
     box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
 }
 
-/* ================= HEADER ================= */
+
 
 .status-header{
     display: flex;
@@ -136,7 +136,7 @@ body{
     color: #475569;
 }
 
-/* ================= DIVIDER ================= */
+
 
 .divider{
     width: calc(100% - 100px);
@@ -145,7 +145,7 @@ body{
     margin: auto;
 }
 
-/* ================= STATUS BANNER ================= */
+
 
 .status-banner{
     margin: 35px 50px;
@@ -171,7 +171,7 @@ body{
     color: #0f172a;
 }
 
-/* ================= TIMELINE ================= */
+
 
 .timeline{
     padding: 10px 50px 40px;
@@ -220,7 +220,7 @@ body{
     line-height: 1.7;
 }
 
-/* ================= EMPTY SESSION ================= */
+
 
 .empty-session{
     padding: 40px 50px;
@@ -228,7 +228,7 @@ body{
     color: #64748b;
 }
 
-/* ================= BUTTONS ================= */
+
 
 .button-group{
     margin-top: 40px;
@@ -269,7 +269,7 @@ body{
     transform: translateY(-2px);
 }
 
-/* ================= FOOTER ================= */
+
 
 .footer{
     margin-top: 35px;
@@ -278,7 +278,7 @@ body{
     font-size: 15px;
 }
 
-/* ================= RESPONSIVE ================= */
+
 
 @media(max-width: 768px){
 
