@@ -12,7 +12,6 @@ body{
     color: #0f172a;
 }
 
-/* ================= CONTAINER ================= */
 
 .container{
     width: 95%;
@@ -20,7 +19,6 @@ body{
     margin: 40px auto;
 }
 
-/* ================= TITLE ================= */
 
 .title{
     font-size: 40px;
@@ -36,7 +34,6 @@ body{
     color: #2563eb;
 }
 
-/* ================= ALERT ================= */
 
 .alert-message{
     background: #eff6ff;
@@ -50,7 +47,6 @@ body{
     gap: 10px;
 }
 
-/* ================= TIMER ================= */
 
 .countdown-timer{
     background: white;
@@ -80,7 +76,6 @@ body{
     font-weight: 700;
 }
 
-/* ================= POSITION CARD ================= */
 
 .position-card{
     background: white;
@@ -90,7 +85,6 @@ body{
     box-shadow: 0 8px 25px rgba(15,23,42,0.06);
 }
 
-/* ================= POSITION TITLE ================= */
 
 .position-card h2{
     font-size: 30px;
@@ -98,7 +92,6 @@ body{
     color: #1e3a8a;
 }
 
-/* ================= CANDIDATES GRID ================= */
 
 .candidates{
     display: grid;
@@ -106,7 +99,6 @@ body{
     gap: 25px;
 }
 
-/* ================= CANDIDATE CARD ================= */
 
 .candidate-card{
     background: #ffffff;
@@ -121,7 +113,6 @@ body{
     transform: translateY(-3px);
 }
 
-/* ================= IMAGE ================= */
 
 .candidate-card img{
     width: 120px;
@@ -135,7 +126,6 @@ body{
     border: 3px solid #e2e8f0;
 }
 
-/* ================= NAME ================= */
 
 .candidate-card h3{
     text-align: center;
@@ -143,7 +133,6 @@ body{
     font-weight: 700;
 }
 
-/* ================= PARTY ================= */
 
 .party-text{
     text-align: center;
@@ -152,7 +141,6 @@ body{
     color: #64748b;
 }
 
-/* ================= VOTES ================= */
 
 .votes{
     margin-top: 18px;
@@ -162,7 +150,6 @@ body{
     font-size: 14px;
 }
 
-/* ================= PROGRESS ================= */
 
 .progress-bar{
     width: 100%;
@@ -180,7 +167,6 @@ body{
     transition: width 0.6s ease;
 }
 
-/* ================= NO RESULTS ================= */
 
 .no-results{
     text-align: center;
@@ -190,7 +176,6 @@ body{
     color: #64748b;
 }
 
-/* ================= BUTTONS ================= */
 
 .bottom-buttons{
     display: flex;
