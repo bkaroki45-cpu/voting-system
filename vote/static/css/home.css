@@ -25,7 +25,7 @@ body{
     position: relative;
 }
 
-/* ================= BACKGROUND DECORATIONS ================= */
+
 
 body::before{
     content: "";
@@ -59,7 +59,7 @@ body::after{
     left: -100px;
 }
 
-/* ================= MAIN CONTAINER ================= */
+
 
 .container{
     width: 100%;
@@ -90,7 +90,7 @@ body::after{
     transform: translateY(-4px);
 }
 
-/* ================= TOP STRIP ================= */
+
 
 .container::before{
     content: "SECURE DIGITAL VOTING PLATFORM";
@@ -116,7 +116,7 @@ body::after{
     border-radius: 32px 32px 0 0;
 }
 
-/* ================= LOGO ================= */
+
 
 .logo{
     width: 100%;
@@ -141,7 +141,7 @@ body::after{
     0 10px 25px rgba(15,23,42,0.05);
 }
 
-/* ================= TITLE ================= */
+
 
 .container h1{
     font-size: 60px;
@@ -156,7 +156,7 @@ body::after{
     letter-spacing: -2px;
 }
 
-/* ================= TEXT ================= */
+
 
 .container p{
     font-size: 18px;
@@ -180,7 +180,7 @@ body::after{
     letter-spacing: 1px;
 }
 
-/* ================= BUTTONS WRAPPER ================= */
+
 
 .btn{
     width: 100%;
@@ -203,7 +203,7 @@ body::after{
     margin-bottom: 18px;
 }
 
-/* ================= REGISTER ================= */
+
 
 .btn-register{
     background:
@@ -222,7 +222,7 @@ body::after{
     0 18px 35px rgba(37,99,235,0.25);
 }
 
-/* ================= LOGIN ================= */
+
 
 .btn-login{
     background: white;
@@ -241,7 +241,7 @@ body::after{
     transform: translateY(-3px);
 }
 
-/* ================= RESPONSIVE ================= */
+
 
 @media(max-width: 768px){
 
