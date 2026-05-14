@@ -20,7 +20,6 @@ body{
     padding: 20px;
 }
 
-/* ================= FORM CONTAINER ================= */
 
 .form-container{
     width: 100%;
@@ -39,7 +38,6 @@ body{
     animation: fadeUp 0.4s ease;
 }
 
-/* ================= TITLE ================= */
 
 .form-container h2{
     text-align: center;
@@ -54,7 +52,6 @@ body{
     letter-spacing: -1px;
 }
 
-/* ================= NOTE ================= */
 
 .form-container p{
     text-align: center;
@@ -68,7 +65,6 @@ body{
     line-height: 1.5;
 }
 
-/* ================= ERROR BOX ================= */
 
 .error-message{
     background: #fef2f2;
@@ -95,13 +91,11 @@ body{
     font-weight: 600;
 }
 
-/* ================= FORM ================= */
 
 form{
     width: 100%;
 }
 
-/* ================= LABELS ================= */
 
 label{
     display: block;
@@ -115,7 +109,6 @@ label{
     font-weight: 700;
 }
 
-/* ================= DJANGO INPUTS ================= */
 
 input{
     width: 100%;
@@ -137,13 +130,11 @@ input{
     transition: 0.2s ease;
 }
 
-/* ================= PLACEHOLDER ================= */
 
 input::placeholder{
     color: #94a3b8;
 }
 
-/* ================= INPUT FOCUS ================= */
 
 input:focus{
     border-color: #2563eb;
@@ -151,7 +142,6 @@ input:focus{
     box-shadow: 0 0 0 4px rgba(37,99,235,0.10);
 }
 
-/* ================= BUTTON ================= */
 
 button{
     width: 100%;
@@ -177,7 +167,6 @@ button{
     box-shadow: 0 10px 25px rgba(37,99,235,0.20);
 }
 
-/* ================= BUTTON HOVER ================= */
 
 button:hover{
     background: #1d4ed8;
@@ -185,7 +174,6 @@ button:hover{
     transform: translateY(-2px);
 }
 
-/* ================= LINKS ================= */
 
 .form-container a{
     color: #2563eb;
@@ -201,7 +189,6 @@ button:hover{
     color: #1d4ed8;
 }
 
-/* ================= ANIMATION ================= */
 
 @keyframes fadeUp{
 
@@ -217,7 +204,6 @@ button:hover{
 
 }
 
-/* ================= RESPONSIVE ================= */
 
 @media(max-width: 768px){
 
