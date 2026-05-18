@@ -124,20 +124,31 @@
 
     const numberWords = {
         one: 1,
+        won: 1,
+        once: 1,
         first: 1,
         two: 2,
+        too: 2,
+        to: 2,
+        tue: 2,
         second: 2,
         three: 3,
+        tree: 3,
+        free: 3,
         third: 3,
         four: 4,
+        for: 4,
+        fore: 4,
         fourth: 4,
         five: 5,
         fifth: 5,
         six: 6,
+        sex: 6,
         sixth: 6,
         seven: 7,
         seventh: 7,
         eight: 8,
+        ate: 8,
         eighth: 8,
         nine: 9,
         ninth: 9,
@@ -336,6 +347,8 @@
             return null;
         }
 
+        setStatus(`I heard: "${spokenText}". Checking the number.`);
+
         const numericMatch = text.match(/\b\d+\b/);
         if (numericMatch) {
             const selectedNumber = Number(numericMatch[0]);
@@ -416,15 +429,15 @@
 
             while (!completed) {
                 const candidateList = position.candidates
-                    .map((candidate) => `Candidate ${candidate.number}, ${candidate.name}`)
+                    .map((candidate) => `Number ${candidate.number}, ${candidate.name}`)
                     .join(". ");
 
-                await speak(`For ${position.name}, the candidates are. ${candidateList}. Say the candidate name or number.`);
+                await speak(`For ${position.name}, the options are. ${candidateList}. Please say only the number, for example, one or two.`);
                 const choice = await listen();
                 const candidate = matchCandidate(choice, position.candidates);
 
                 if (!candidate) {
-                    await speak("I did not recognize that candidate. Let us try again.");
+                    await speak(`I heard ${choice || "nothing"}. Please say only the option number, like one or two.`);
                     continue;
                 }
 
