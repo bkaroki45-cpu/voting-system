@@ -13,6 +13,47 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
 from .models import SchoolStudent
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+
+from .services import (
+    VOTE_CONFIRMATION_MESSAGE,
+    VoteSubmissionError,
+    listen,
+    match_candidate,
+    send_results_email,
+    send_sms,
+    send_vote_confirmation,
+    speak,
+    submit_vote,
+)
+
+
+def add_registration_email_field(form):
+    from django import forms
+
+    form.fields["email"] = forms.EmailField(required=True)
+    return form
+
+
+def clean_gmail_address(email):
+    email = (email or "").strip().lower()
+
+    if not email:
+        raise ValidationError("Email is required for online voters.")
+
+    validate_email(email)
+
+    if not email.endswith("@gmail.com"):
+        raise ValidationError("Only Gmail addresses are allowed.")
+
+    if User.objects.filter(email__iexact=email).exists():
+        raise ValidationError("This email is already registered.")
+
+    if SchoolStudent.objects.filter(email__iexact=email).exists():
+        raise ValidationError("This email is already registered.")
+
+    return email
 
 # -----------------------------
 # Home page
@@ -34,13 +75,20 @@ from .models import SchoolStudent
 
 def student_register(request):
     if request.method == "POST":
-        form = StudentRegisterForm(request.POST)
+        form = add_registration_email_field(StudentRegisterForm(request.POST))
 
         if form.is_valid():
 
             admission_number = form.cleaned_data['admission_number'].strip()
+            email = form.cleaned_data['email'].strip().lower()
             password = form.cleaned_data['password1']
             pin = form.cleaned_data['pin'].strip()
+
+            try:
+                email = clean_gmail_address(email)
+            except ValidationError as exc:
+                form.add_error("email", exc)
+                return render(request, 'vote/register.html', {'form': form})
 
             # =========================
             # PIN VALIDATION (IMPORTANT FIX)
@@ -80,6 +128,7 @@ def student_register(request):
 
             user = User.objects.create_user(
                 username=admission_number,
+                email=email,
                 password=password,
                 first_name=first_name,
                 last_name=last_name
@@ -92,6 +141,7 @@ def student_register(request):
             # LINK + SAVE PIN
             # =========================
             school_student.user = user
+            school_student.email = email
             school_student.pin = make_password(pin)
             school_student.is_ussd_registered = True
             school_student.save()
@@ -105,7 +155,7 @@ def student_register(request):
             return redirect('vote_page')
 
     else:
-        form = StudentRegisterForm()
+        form = add_registration_email_field(StudentRegisterForm())
 
     return render(request, 'vote/register.html', {'form': form})
 # -----------------------------
@@ -180,6 +230,10 @@ def vote_page(request):
                 'session': session
             })
 
+        student = SchoolStudent.objects.filter(user=user).first()
+        phone = request.POST.get("phone") or (student.phone if student else None)
+        voted_any = False
+
         for position in positions:
             candidate_id = request.POST.get(f'position_{position.id}')
 
@@ -193,12 +247,23 @@ def vote_page(request):
                 except Candidate.DoesNotExist:
                     continue
 
-                # 🔥 PREVENT DOUBLE VOTE PER POSITION
-                Vote.objects.get_or_create(
-                    user=user,
-                    position=position,
-                    defaults={'candidate': candidate}
-                )
+                try:
+                    submit_vote(
+                        candidate=candidate,
+                        user=user,
+                        phone=phone,
+                        send_notifications=False,
+                    )
+                    voted_any = True
+                except VoteSubmissionError:
+                    continue
+
+        if voted_any:
+            if student and phone and student.phone != phone:
+                student.phone = phone
+                student.save(update_fields=["phone"])
+
+            send_vote_confirmation(user=user, phone=phone)
 
         return redirect('results_page')
 
@@ -207,6 +272,88 @@ def vote_page(request):
         'session': session,
         'session_end': session.end_datetime
     })
+
+
+@login_required
+def voice_vote_view(request):
+    user = request.user
+    student = SchoolStudent.objects.filter(user=user).first()
+    phone = student.phone if student else None
+
+    session = get_active_session()
+
+    if not session or not session.is_open():
+        speak("Voting is currently closed.")
+        return HttpResponse("Voting is currently closed.", content_type="text/plain")
+
+    positions = list(Position.objects.prefetch_related("candidate_set").order_by("id"))
+
+    if not positions:
+        speak("No voting positions are available.")
+        return HttpResponse("No voting positions are available.", content_type="text/plain")
+
+    speak("Welcome to the accessible school election voice voting system.")
+    recorded_votes = []
+
+    for position in positions:
+        if Vote.has_voted(user=user, phone=phone, position=position):
+            continue
+
+        candidates = list(Candidate.objects.filter(position=position).order_by("id"))
+
+        if not candidates:
+            continue
+
+        while True:
+            speak(f"For {position.name}, the candidates are:")
+
+            for index, candidate in enumerate(candidates, 1):
+                speak(f"Candidate {index}, {candidate.name}.")
+
+            speak("Please say the candidate name or candidate number.")
+            spoken_choice = listen()
+            candidate = match_candidate(spoken_choice, candidates)
+
+            if not candidate:
+                speak("I did not recognize that candidate. Let us try again.")
+                continue
+
+            speak(
+                f"You selected {candidate.name} for {position.name}. "
+                "Say confirm to submit your vote, or cancel to choose again."
+            )
+            confirmation = listen()
+
+            if "confirm" in confirmation:
+                try:
+                    submit_vote(
+                        candidate=candidate,
+                        user=user,
+                        phone=phone,
+                    )
+                except VoteSubmissionError as exc:
+                    speak(str(exc))
+                    break
+
+                recorded_votes.append(f"{position.name}: {candidate.name}")
+                speak(f"Your vote for {candidate.name} has been recorded.")
+                break
+
+            if "cancel" in confirmation:
+                speak("Selection cancelled. Restarting this position.")
+                continue
+
+            speak("Confirmation was not understood. Restarting this position.")
+
+    if recorded_votes:
+        speak("Thank you. Your voice vote has been completed.")
+        return HttpResponse(
+            "Voice vote recorded:\n" + "\n".join(recorded_votes),
+            content_type="text/plain",
+        )
+
+    speak("No new vote was recorded.")
+    return HttpResponse("No new vote was recorded.", content_type="text/plain")
 
 @login_required
 def results_page(request):
@@ -382,6 +529,21 @@ def final_results_page(request):
 
     comments = Comment.objects.all().order_by('-timestamp')
 
+    results_email_key = f"results_email_sent_session_{session.id}"
+    if request.user.email and not request.session.get(results_email_key):
+        result_lines = ["Final school election results:"]
+
+        for result in final_results:
+            result_lines.append(f"\n{result['position']}")
+            for candidate in result["candidates"]:
+                result_lines.append(
+                    f"{candidate['name']} - {candidate['votes']} votes "
+                    f"({candidate['percentage']}%)"
+                )
+
+        send_results_email(request.user.email, "\n".join(result_lines))
+        request.session[results_email_key] = True
+
     return render(request, 'vote/final_results.html', {
         "final_results": final_results,
         "comments": comments,
@@ -481,6 +643,7 @@ def ussd_callback(request):
 
                 student.pin = make_password(pin)
                 student.is_ussd_registered = True
+                student.phone = phone or student.phone
                 student.save()
 
                 return HttpResponse("END PIN created. Re-dial to vote.", content_type="text/plain")
@@ -565,16 +728,21 @@ def ussd_callback(request):
 
             candidate = candidates[cand_index - 1]
 
-            # PREVENT DOUBLE VOTING (WEB + USSD)
-            if Vote.objects.filter(user=student.user, position=position).exists():
-                return HttpResponse("END Already voted for this position", content_type="text/plain")
+            if phone and student.phone != phone:
+                student.phone = phone
+                student.save(update_fields=["phone"])
 
-            Vote.objects.create(
-                user=student.user,
-                phone=phone,
-                position=position,
-                candidate=candidate
-            )
+            try:
+                submit_vote(
+                    candidate=candidate,
+                    user=student.user,
+                    phone=phone,
+                    send_notifications=False,
+                )
+            except VoteSubmissionError as exc:
+                return HttpResponse(f"END {str(exc)}", content_type="text/plain")
+
+            send_sms(phone, VOTE_CONFIRMATION_MESSAGE)
 
             return HttpResponse(f"END Vote recorded for {candidate.name}", content_type="text/plain")
 

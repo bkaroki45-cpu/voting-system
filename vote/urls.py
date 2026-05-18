@@ -10,6 +10,7 @@ urlpatterns = [
 
     # VOTING
     path('vote/', views.vote_page, name='vote_page'),
+    path('voice-vote/', views.voice_vote_view, name='voice_vote'),
     path('results/', views.results_page, name='results_page'),
 
     # FINAL RESULTS

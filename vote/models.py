@@ -50,6 +50,8 @@ class SchoolStudent(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     full_name = models.CharField(max_length=150)
     admission_number = models.CharField(max_length=50, unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
+    phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
     imported = models.BooleanField(default=False)
 
@@ -129,10 +131,18 @@ class Vote(models.Model):
         if not position:
             return False
 
-        return Vote.objects.filter(
-            Q(user=user) | Q(phone=phone),
-            position=position
-        ).exists()
+        query = Q()
+
+        if user:
+            query |= Q(user=user)
+
+        if phone:
+            query |= Q(phone=phone)
+
+        if not query:
+            return False
+
+        return Vote.objects.filter(query, position=position).exists()
 
 
 # =============================
