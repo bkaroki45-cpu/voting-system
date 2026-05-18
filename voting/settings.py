@@ -223,3 +223,7 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 ).strip()
 
 EMAIL_TIMEOUT = 10
+
+# Optional HTTPS email provider for hosts that block SMTP ports.
+EMAIL_PROVIDER = (os.environ.get('EMAIL_PROVIDER') or '').strip().lower()
+RESEND_API_KEY = (os.environ.get('RESEND_API_KEY') or '').strip()

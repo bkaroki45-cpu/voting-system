@@ -2,6 +2,9 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 import logging
+import json
+from urllib import request as urlrequest
+from urllib.error import HTTPError, URLError
 
 from .models import Vote
 
@@ -60,6 +63,12 @@ def send_email(to_email, subject, message):
         )
         return False
 
+    provider = getattr(settings, "EMAIL_PROVIDER", "")
+    resend_api_key = getattr(settings, "RESEND_API_KEY", "")
+
+    if provider == "resend" or resend_api_key:
+        return send_email_with_resend(to_email, subject, message, from_email)
+
     try:
         send_mail(subject, message, from_email, [to_email], fail_silently=False)
     except Exception:
@@ -74,6 +83,42 @@ def send_email(to_email, subject, message):
         return False
 
     return True
+
+
+def send_email_with_resend(to_email, subject, message, from_email):
+    api_key = getattr(settings, "RESEND_API_KEY", "")
+
+    if not api_key:
+        logger.error("Resend email not sent because RESEND_API_KEY is not configured.")
+        return False
+
+    payload = json.dumps({
+        "from": from_email,
+        "to": [to_email],
+        "subject": subject,
+        "text": message,
+    }).encode("utf-8")
+
+    email_request = urlrequest.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlrequest.urlopen(email_request, timeout=getattr(settings, "EMAIL_TIMEOUT", 10)) as response:
+            return 200 <= response.status < 300
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        logger.error("Resend email failed with status %s: %s", exc.code, error_body)
+    except URLError:
+        logger.exception("Resend email failed because the HTTPS request could not connect.")
+
+    return False
 
 
 def submit_vote(candidate, user=None, phone=None, send_notifications=True):
