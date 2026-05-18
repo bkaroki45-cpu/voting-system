@@ -54,7 +54,7 @@ def send_email(to_email, subject, message):
         return False
 
     try:
-        send_mail(subject, message, from_email, [to_email], fail_silently=True)
+        send_mail(subject, message, from_email, [to_email], fail_silently=False)
     except Exception:
         return False
 

@@ -16,3 +16,4 @@ psycopg2-binary
 dj-database-url
 pyttsx3
 SpeechRecognition
+
