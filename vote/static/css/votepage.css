@@ -33,6 +33,62 @@ body{
 
 
 
+.voice-vote-touch{
+    width: 100%;
+    min-height: 72px;
+    margin-bottom: 20px;
+    padding: 16px 18px;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    border-radius: 14px;
+    border: 2px solid #16a34a;
+    background: #f0fdf4;
+    color: #14532d;
+    text-decoration: none;
+
+    box-shadow: 0 8px 20px rgba(22,163,74,0.12);
+}
+
+.voice-vote-touch:focus,
+.voice-vote-touch:hover{
+    background: #dcfce7;
+    outline: 3px solid rgba(22,163,74,0.25);
+}
+
+.voice-vote-icon{
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    background: #16a34a;
+    color: white;
+    font-size: 24px;
+}
+
+.voice-vote-touch strong,
+.voice-vote-touch small{
+    display: block;
+}
+
+.voice-vote-touch strong{
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.voice-vote-touch small{
+    margin-top: 4px;
+    color: #166534;
+    font-size: 14px;
+}
+
 .countdown-timer{
     background: white;
     padding: 16px 20px;

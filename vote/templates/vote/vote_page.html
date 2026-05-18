@@ -13,6 +13,14 @@
 
     <h1 class="title">🗳️ Cast Your Vote</h1>
 
+    <a class="voice-vote-touch" href="{% url 'voice_vote' %}" aria-label="Switch to voice voting">
+        <span class="voice-vote-icon">🎙</span>
+        <span>
+            <strong>Voice Voting</strong>
+            <small>Tap here to continue by voice</small>
+        </span>
+    </a>
+
     {% if session %}
     <div id="countdown" class="countdown-timer">
         Voting ends in: <span id="time"></span>
