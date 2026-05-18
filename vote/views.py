@@ -430,7 +430,6 @@ def results_page(request):
 def close(request):
     return render(request, 'vote/closed.html')
 
-@login_required
 def final_results_page(request):
 
     # -----------------------------
@@ -458,6 +457,9 @@ def final_results_page(request):
     error_message = None
 
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect('login')
+
         message = request.POST.get('message')
         adm_number = request.POST.get('adm_number')
 
@@ -539,7 +541,9 @@ def final_results_page(request):
     comments = Comment.objects.all().order_by('-timestamp')
 
     results_email_key = f"results_email_sent_session_{session.id}"
-    if request.user.email and not request.session.get(results_email_key):
+    user_email = request.user.email if request.user.is_authenticated else None
+
+    if user_email and not request.session.get(results_email_key):
         result_lines = ["Final school election results:"]
 
         for result in final_results:
@@ -550,7 +554,11 @@ def final_results_page(request):
                     f"({candidate['percentage']}%)"
                 )
 
-        send_results_email(request.user.email, "\n".join(result_lines))
+        try:
+            send_results_email(user_email, "\n".join(result_lines))
+        except Exception:
+            pass
+
         request.session[results_email_key] = True
 
     return render(request, 'vote/final_results.html', {

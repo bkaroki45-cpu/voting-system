@@ -33,10 +33,13 @@ def send_sms(phone, message):
     africastalking.initialize(username, api_key)
     sms = africastalking.SMS
 
-    if sender_id:
-        sms.send(message, [phone], sender_id=sender_id)
-    else:
-        sms.send(message, [phone])
+    try:
+        if sender_id:
+            sms.send(message, [phone], sender_id=sender_id)
+        else:
+            sms.send(message, [phone])
+    except Exception:
+        return False
 
     return True
 
@@ -46,7 +49,15 @@ def send_email(to_email, subject, message):
         return False
 
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
-    send_mail(subject, message, from_email, [to_email], fail_silently=True)
+
+    if not from_email:
+        return False
+
+    try:
+        send_mail(subject, message, from_email, [to_email], fail_silently=True)
+    except Exception:
+        return False
+
     return True
 
 
