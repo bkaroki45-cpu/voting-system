@@ -853,6 +853,11 @@ def ussd_callback(request):
             if not is_authenticated(student, pin):
                 return HttpResponse("END Authentication failed", content_type="text/plain")
 
+            vote_choice = safe_int(parts[2])
+
+            if vote_choice != 1:
+                return HttpResponse("END Invalid option", content_type="text/plain")
+
             positions = list(Position.objects.order_by("id"))
 
             if not positions:
@@ -872,13 +877,16 @@ def ussd_callback(request):
             if not is_authenticated(student, pin):
                 return HttpResponse("END Authentication failed", content_type="text/plain")
 
-            pos_index = safe_int(parts[2])
+            pos_index = safe_int(parts[3])
             positions = list(Position.objects.order_by("id"))
 
             if not pos_index or pos_index < 1 or pos_index > len(positions):
                 return HttpResponse("END Invalid position", content_type="text/plain")
 
             position = positions[pos_index - 1]
+
+            if Vote.has_voted(user=student.user, phone=phone, position=position):
+                return HttpResponse("END Already voted for this position", content_type="text/plain")
 
             candidates = list(Candidate.objects.filter(position=position).order_by("id"))
 
@@ -899,8 +907,8 @@ def ussd_callback(request):
             if not is_authenticated(student, pin):
                 return HttpResponse("END Authentication failed", content_type="text/plain")
 
-            pos_index = safe_int(parts[2])
-            cand_index = safe_int(parts[3])
+            pos_index = safe_int(parts[3])
+            cand_index = safe_int(parts[4])
 
             positions = list(Position.objects.order_by("id"))
 
