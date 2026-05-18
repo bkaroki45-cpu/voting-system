@@ -644,6 +644,7 @@ def final_results_page(request):
 
         message = request.POST.get('message')
         adm_number = request.POST.get('adm_number')
+        visibility = request.POST.get('visibility', Comment.PUBLIC)
 
         student = SchoolStudent.objects.filter(user=request.user).first()
 
@@ -654,10 +655,14 @@ def final_results_page(request):
             error_message = "Invalid admission number."
 
         else:
+            if visibility not in (Comment.PUBLIC, Comment.ADMIN_ONLY):
+                visibility = Comment.PUBLIC
+
             Comment.objects.create(
                 user=request.user,
                 adm_number=adm_number,
-                message=message
+                message=message,
+                visibility=visibility,
             )
             return redirect('final_results_page')
 
@@ -720,7 +725,7 @@ def final_results_page(request):
             "winners_ids": winner_ids
         })
 
-    comments = Comment.objects.all().order_by('-timestamp')
+    comments = Comment.objects.filter(visibility=Comment.PUBLIC).order_by('-timestamp')
 
     if not session.results_email_sent:
         sent_count = send_final_results_to_registered_voters(session, final_results)

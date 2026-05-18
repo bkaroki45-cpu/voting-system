@@ -150,9 +150,21 @@ class Vote(models.Model):
 # 7. COMMENTS
 # =============================
 class Comment(models.Model):
+    PUBLIC = "public"
+    ADMIN_ONLY = "admin"
+    VISIBILITY_CHOICES = [
+        (PUBLIC, "Public comment"),
+        (ADMIN_ONLY, "Admin only"),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     adm_number = models.CharField(max_length=20)
     message = models.TextField()
+    visibility = models.CharField(
+        max_length=20,
+        choices=VISIBILITY_CHOICES,
+        default=PUBLIC,
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

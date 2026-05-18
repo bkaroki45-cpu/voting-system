@@ -147,4 +147,12 @@ admin.site.register(User, BaseUserAdmin)
 admin.site.register(Position)
 admin.site.register(Candidate)
 admin.site.register(Vote)
-admin.site.register(Comment)
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'adm_number', 'visibility', 'timestamp')
+    list_filter = ('visibility', 'timestamp')
+    search_fields = ('user__username', 'adm_number', 'message')
+    readonly_fields = ('user', 'adm_number', 'message', 'visibility', 'timestamp')
+    ordering = ('-timestamp',)

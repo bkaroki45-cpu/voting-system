@@ -106,6 +106,16 @@
             {% csrf_token %}
             <input type="text" name="adm_number" placeholder="Admission Number" required>
             <textarea name="message" placeholder="Write your message..." rows="3" required></textarea>
+            <div class="comment-choice" role="radiogroup" aria-label="Comment visibility">
+                <label>
+                    <input type="radio" name="visibility" value="public" checked>
+                    Show on this page
+                </label>
+                <label>
+                    <input type="radio" name="visibility" value="admin">
+                    Send to admin only
+                </label>
+            </div>
             <button type="submit">Submit Comment</button>
         </form>
 
