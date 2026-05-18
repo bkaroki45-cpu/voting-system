@@ -1107,7 +1107,15 @@ def ussd_callback(request):
 
             send_sms(phone, VOTE_CONFIRMATION_MESSAGE)
 
-            return HttpResponse(f"END Vote recorded for {candidate.name}", content_type="text/plain")
+            results_time = timezone.localtime(session.end_datetime).strftime("%d %b %Y %I:%M %p")
+
+            return HttpResponse(
+                (
+                    f"END Vote recorded for {candidate.name}.\n"
+                    f"Final results will be available after {results_time}."
+                ),
+                content_type="text/plain",
+            )
 
         return HttpResponse("END Invalid request", content_type="text/plain")
 
