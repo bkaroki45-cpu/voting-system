@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from datetime import datetime, date, time
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
 from .models import SchoolStudent
 from django.core.exceptions import ValidationError
@@ -283,77 +283,60 @@ def voice_vote_view(request):
     session = get_active_session()
 
     if not session or not session.is_open():
-        speak("Voting is currently closed.")
-        return HttpResponse("Voting is currently closed.", content_type="text/plain")
+        if request.method == "POST":
+            return JsonResponse({"ok": False, "message": "Voting is currently closed."}, status=400)
 
-    positions = list(Position.objects.prefetch_related("candidate_set").order_by("id"))
+        return render(request, 'vote/closed.html', {
+            'message': 'Voting is currently closed.',
+            'session': session
+        })
 
-    if not positions:
-        speak("No voting positions are available.")
-        return HttpResponse("No voting positions are available.", content_type="text/plain")
+    if request.method == "POST":
+        candidate_id = request.POST.get("candidate_id")
 
-    speak("Welcome to the accessible school election voice voting system.")
-    recorded_votes = []
+        try:
+            candidate = Candidate.objects.select_related("position").get(id=candidate_id)
+        except Candidate.DoesNotExist:
+            return JsonResponse({"ok": False, "message": "Invalid candidate."}, status=400)
 
-    for position in positions:
+        try:
+            submit_vote(candidate=candidate, user=user, phone=phone)
+        except VoteSubmissionError as exc:
+            return JsonResponse({"ok": False, "message": str(exc)}, status=400)
+
+        return JsonResponse({
+            "ok": True,
+            "message": f"Vote recorded for {candidate.name}.",
+            "candidate": candidate.name,
+            "position": candidate.position.name,
+        })
+
+    voice_positions = []
+
+    for position in Position.objects.prefetch_related("candidate_set").order_by("id"):
         if Vote.has_voted(user=user, phone=phone, position=position):
             continue
 
-        candidates = list(Candidate.objects.filter(position=position).order_by("id"))
+        candidates = [
+            {
+                "id": candidate.id,
+                "name": candidate.name,
+                "number": index,
+            }
+            for index, candidate in enumerate(position.candidate_set.all().order_by("id"), 1)
+        ]
 
-        if not candidates:
-            continue
+        if candidates:
+            voice_positions.append({
+                "id": position.id,
+                "name": position.name,
+                "candidates": candidates,
+            })
 
-        while True:
-            speak(f"For {position.name}, the candidates are:")
-
-            for index, candidate in enumerate(candidates, 1):
-                speak(f"Candidate {index}, {candidate.name}.")
-
-            speak("Please say the candidate name or candidate number.")
-            spoken_choice = listen()
-            candidate = match_candidate(spoken_choice, candidates)
-
-            if not candidate:
-                speak("I did not recognize that candidate. Let us try again.")
-                continue
-
-            speak(
-                f"You selected {candidate.name} for {position.name}. "
-                "Say confirm to submit your vote, or cancel to choose again."
-            )
-            confirmation = listen()
-
-            if "confirm" in confirmation:
-                try:
-                    submit_vote(
-                        candidate=candidate,
-                        user=user,
-                        phone=phone,
-                    )
-                except VoteSubmissionError as exc:
-                    speak(str(exc))
-                    break
-
-                recorded_votes.append(f"{position.name}: {candidate.name}")
-                speak(f"Your vote for {candidate.name} has been recorded.")
-                break
-
-            if "cancel" in confirmation:
-                speak("Selection cancelled. Restarting this position.")
-                continue
-
-            speak("Confirmation was not understood. Restarting this position.")
-
-    if recorded_votes:
-        speak("Thank you. Your voice vote has been completed.")
-        return HttpResponse(
-            "Voice vote recorded:\n" + "\n".join(recorded_votes),
-            content_type="text/plain",
-        )
-
-    speak("No new vote was recorded.")
-    return HttpResponse("No new vote was recorded.", content_type="text/plain")
+    return render(request, 'vote/voice_vote.html', {
+        "voice_positions": voice_positions,
+        "session": session,
+    })
 
 @login_required
 def results_page(request):

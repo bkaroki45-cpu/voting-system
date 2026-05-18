@@ -105,10 +105,13 @@ def speak(text):
     except ImportError:
         return False
 
-    engine = pyttsx3.init()
-    engine.say(text)
-    engine.runAndWait()
-    return True
+    try:
+        engine = pyttsx3.init()
+        engine.say(text)
+        engine.runAndWait()
+        return True
+    except RuntimeError:
+        return False
 
 
 def listen(timeout=8, phrase_time_limit=6):
