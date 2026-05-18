@@ -258,23 +258,123 @@
         });
     }
 
-    function matchCandidate(spokenText, candidates) {
-        const text = spokenText.toLowerCase().trim();
+    function normalizeSpeechText(value) {
+        return value
+            .toLowerCase()
+            .replace(/&/g, " and ")
+            .replace(/[^a-z0-9\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
 
-        if (/^\d+$/.test(text)) {
-            const selectedNumber = Number(text);
-            return candidates.find((candidate) => candidate.number === selectedNumber);
+    function editDistance(firstValue, secondValue) {
+        const first = normalizeSpeechText(firstValue);
+        const second = normalizeSpeechText(secondValue);
+        const matrix = Array.from({ length: first.length + 1 }, () => []);
+
+        for (let i = 0; i <= first.length; i++) {
+            matrix[i][0] = i;
+        }
+
+        for (let j = 0; j <= second.length; j++) {
+            matrix[0][j] = j;
+        }
+
+        for (let i = 1; i <= first.length; i++) {
+            for (let j = 1; j <= second.length; j++) {
+                const cost = first[i - 1] === second[j - 1] ? 0 : 1;
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j - 1] + cost
+                );
+            }
+        }
+
+        return matrix[first.length][second.length];
+    }
+
+    function candidateScore(spokenText, candidate) {
+        const text = normalizeSpeechText(spokenText);
+        const name = normalizeSpeechText(candidate.name);
+        const textWords = text.split(" ").filter(Boolean);
+        const nameWords = name.split(" ").filter((word) => word.length > 1);
+        let score = 0;
+
+        if (!text) {
+            return 0;
+        }
+
+        if (text === name) {
+            score += 100;
+        }
+
+        if (text.includes(name) || name.includes(text)) {
+            score += 80;
+        }
+
+        for (const nameWord of nameWords) {
+            if (textWords.includes(nameWord)) {
+                score += nameWord.length >= 4 ? 35 : 15;
+                continue;
+            }
+
+            for (const textWord of textWords) {
+                if (textWord.length >= 4 && editDistance(textWord, nameWord) <= 1) {
+                    score += 22;
+                }
+            }
+        }
+
+        return score;
+    }
+
+    function matchCandidate(spokenText, candidates) {
+        const text = normalizeSpeechText(spokenText);
+
+        if (!text) {
+            return null;
+        }
+
+        const numericMatch = text.match(/\b\d+\b/);
+        if (numericMatch) {
+            const selectedNumber = Number(numericMatch[0]);
+            const candidateByNumber = candidates.find((candidate) => candidate.number === selectedNumber);
+
+            if (candidateByNumber) {
+                return candidateByNumber;
+            }
         }
 
         for (const [word, number] of Object.entries(numberWords)) {
             if (text.split(/\s+/).includes(word)) {
-                return candidates.find((candidate) => candidate.number === number);
+                const candidateByWord = candidates.find((candidate) => candidate.number === number);
+
+                if (candidateByWord) {
+                    return candidateByWord;
+                }
             }
         }
 
-        return candidates.find((candidate) => {
-            return text.includes(candidate.name.toLowerCase());
-        });
+        const rankedCandidates = candidates
+            .map((candidate) => ({
+                candidate,
+                score: candidateScore(text, candidate)
+            }))
+            .sort((first, second) => second.score - first.score);
+
+        if (!rankedCandidates.length || rankedCandidates[0].score < 20) {
+            return null;
+        }
+
+        if (
+            rankedCandidates.length > 1
+            && rankedCandidates[0].score === rankedCandidates[1].score
+        ) {
+            return null;
+        }
+
+        return rankedCandidates[0].candidate;
     }
 
     async function submitCandidate(candidateId) {
