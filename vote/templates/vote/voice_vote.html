@@ -467,9 +467,12 @@
         return rankedCandidates[0].candidate;
     }
 
-    async function submitCandidate(candidateId) {
+    async function submitAllCandidates(candidateIds) {
         const body = new URLSearchParams();
-        body.append("candidate_id", candidateId);
+
+        for (const candidateId of candidateIds) {
+            body.append("candidate_ids", candidateId);
+        }
 
         const response = await fetch(window.location.href, {
             method: "POST",
@@ -506,6 +509,7 @@
         }
 
         await speak("Welcome to the accessible school election voice voting system.");
+        const selectedCandidates = [];
 
         for (const position of positions) {
             let completed = false;
@@ -559,20 +563,26 @@
                     }
                 }
 
-                const result = await submitCandidate(candidate.id);
-
-                if (!result.ok) {
-                    await speak(result.message || "Your vote could not be recorded.");
-                    completed = true;
-                    continue;
-                }
-
-                await speak(result.message);
+                selectedCandidates.push(candidate);
+                await speak(`Selection saved for ${position.name}. We will submit after all positions are complete.`);
                 completed = true;
             }
         }
 
-        await speak("Thank you. Your voice vote has been completed.");
+        await speak("All positions are complete. Submitting all votes now.");
+        const result = await submitAllCandidates(
+            selectedCandidates.map((candidate) => candidate.id)
+        );
+
+        if (!result.ok) {
+            await speak(result.message || "Your votes could not be recorded.");
+            startButton.disabled = false;
+            startButton.textContent = "Try again";
+            voiceFlowRunning = false;
+            return;
+        }
+
+        await speak(result.message || "Thank you. Your voice vote has been completed.");
         window.location.href = "{% url 'results_page' %}";
     }
 

@@ -15,6 +15,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from .models import SchoolStudent
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db import transaction
 
 from .services import (
     VOTE_CONFIRMATION_MESSAGE,
@@ -292,23 +293,48 @@ def voice_vote_view(request):
         })
 
     if request.method == "POST":
-        candidate_id = request.POST.get("candidate_id")
+        candidate_ids = request.POST.getlist("candidate_ids")
+
+        if not candidate_ids:
+            return JsonResponse({"ok": False, "message": "No candidates selected."}, status=400)
+
+        remaining_positions = [
+            position for position in Position.objects.order_by("id")
+            if not Vote.has_voted(user=user, phone=phone, position=position)
+        ]
+
+        candidates = Candidate.objects.select_related("position").filter(id__in=candidate_ids)
+        candidates_by_position = {candidate.position_id: candidate for candidate in candidates}
+
+        missing_positions = [
+            position.name for position in remaining_positions
+            if position.id not in candidates_by_position
+        ]
+
+        if missing_positions:
+            return JsonResponse({
+                "ok": False,
+                "message": "Please vote for all positions before submitting.",
+                "missing_positions": missing_positions,
+            }, status=400)
 
         try:
-            candidate = Candidate.objects.select_related("position").get(id=candidate_id)
-        except Candidate.DoesNotExist:
-            return JsonResponse({"ok": False, "message": "Invalid candidate."}, status=400)
-
-        try:
-            submit_vote(candidate=candidate, user=user, phone=phone)
+            with transaction.atomic():
+                for position in remaining_positions:
+                    submit_vote(
+                        candidate=candidates_by_position[position.id],
+                        user=user,
+                        phone=phone,
+                        send_notifications=False,
+                    )
         except VoteSubmissionError as exc:
             return JsonResponse({"ok": False, "message": str(exc)}, status=400)
 
+        send_vote_confirmation(user=user, phone=phone)
+
         return JsonResponse({
             "ok": True,
-            "message": f"Vote recorded for {candidate.name}.",
-            "candidate": candidate.name,
-            "position": candidate.position.name,
+            "message": "All votes have been successfully recorded.",
         })
 
     voice_positions = []
