@@ -16,20 +16,40 @@
         <div class="error-message">{{ error }}</div>
         {% endif %}
 
-        <form method="POST">
-            {% csrf_token %}
+        {% if message %}
+        <div class="success-message">{{ message }}</div>
+        {% endif %}
 
-            <label>Admission Number</label>
-            <input type="text" name="admission_number" required>
+        {% if show_code_form %}
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="login_step" value="verify_code">
 
-            <label>Password (optional)</label>
-            <input type="password" name="password">
+                <label>Verification Code</label>
+                <input type="text" name="verification_code" inputmode="numeric" maxlength="6" required>
 
-            <label>PIN (optional)</label>
-            <input type="password" name="pin" maxlength="4">
+                {% if pending_email %}
+                    <p>Enter the 6-digit code sent to {{ pending_email }}.</p>
+                {% endif %}
 
-            <button type="submit">Login</button>
-        </form>
+                <button type="submit">Verify Code</button>
+            </form>
+        {% else %}
+            <form method="POST">
+                {% csrf_token %}
+
+                <label>Admission Number</label>
+                <input type="text" name="admission_number" required>
+
+                <label>Password (optional)</label>
+                <input type="password" name="password">
+
+                <label>PIN (optional)</label>
+                <input type="password" name="pin" maxlength="4" inputmode="numeric">
+
+                <button type="submit">Login</button>
+            </form>
+        {% endif %}
 
         <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
     </div>

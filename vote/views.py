@@ -7,7 +7,8 @@ from .forms import StudentRegisterForm
 from .models import SchoolStudent, Candidate, Position, Vote, Comment
 from django.contrib import messages
 from django.contrib.auth.models import User
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
+import secrets
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
@@ -22,6 +23,7 @@ from .services import (
     VoteSubmissionError,
     listen,
     match_candidate,
+    send_login_verification_code,
     send_results_email,
     send_sms,
     send_vote_confirmation,
@@ -37,7 +39,7 @@ def add_registration_email_field(form):
     return form
 
 
-def clean_gmail_address(email):
+def clean_gmail_address(email, admission_number=None):
     email = (email or "").strip().lower()
 
     if not email:
@@ -51,10 +53,111 @@ def clean_gmail_address(email):
     if User.objects.filter(email__iexact=email).exists():
         raise ValidationError("This email is already registered.")
 
-    if SchoolStudent.objects.filter(email__iexact=email).exists():
+    student_email_exists = SchoolStudent.objects.filter(email__iexact=email)
+    if admission_number:
+        student_email_exists = student_email_exists.exclude(admission_number=admission_number)
+
+    if student_email_exists.exists():
         raise ValidationError("This email is already registered.")
 
     return email
+
+
+def build_student_user(student):
+    if student.user:
+        return student.user
+
+    if not student.email:
+        return None
+
+    names = student.full_name.strip().split()
+    user = User.objects.filter(username=student.admission_number).first()
+
+    if not user:
+        user = User.objects.create_user(
+            username=student.admission_number,
+            email=student.email,
+            password=None,
+            first_name=names[0] if names else "",
+            last_name=" ".join(names[1:]) if len(names) > 1 else "",
+        )
+        user.set_unusable_password()
+        user.save()
+
+    student.user = user
+    student.save(update_fields=["user"])
+    return user
+
+
+def get_login_email(user):
+    email = (getattr(user, "email", "") or "").strip()
+    if email:
+        return email
+
+    student = SchoolStudent.objects.filter(user=user).first()
+    return (student.email or "").strip() if student else ""
+
+
+def begin_two_step_login(request, user):
+    email = get_login_email(user)
+
+    if not email:
+        return False
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    expires_at = timezone.now() + timedelta(minutes=10)
+
+    if not send_login_verification_code(email, code):
+        return False
+
+    request.session["pending_login_user_id"] = user.id
+    request.session["pending_login_code"] = code
+    request.session["pending_login_expires_at"] = expires_at.isoformat()
+    request.session["pending_login_email"] = email
+    return True
+
+
+def complete_two_step_login(request, code):
+    pending_user_id = request.session.get("pending_login_user_id")
+    pending_code = request.session.get("pending_login_code")
+    expires_at_value = request.session.get("pending_login_expires_at")
+
+    if not pending_user_id or not pending_code or not expires_at_value:
+        return None, "Your login code session expired. Please log in again."
+
+    try:
+        expires_at = datetime.fromisoformat(expires_at_value)
+    except ValueError:
+        return None, "Your login code session expired. Please log in again."
+
+    if timezone.is_naive(expires_at):
+        expires_at = timezone.make_aware(expires_at, timezone.get_current_timezone())
+
+    if timezone.now() > expires_at:
+        clear_pending_login(request)
+        return None, "Your login code expired. Please log in again."
+
+    if (code or "").strip() != pending_code:
+        return None, "Invalid verification code."
+
+    user = User.objects.filter(id=pending_user_id).first()
+
+    if not user:
+        clear_pending_login(request)
+        return None, "Account not found. Please log in again."
+
+    clear_pending_login(request)
+    return user, None
+
+
+def clear_pending_login(request):
+    for key in (
+        "pending_login_user_id",
+        "pending_login_code",
+        "pending_login_expires_at",
+        "pending_login_email",
+    ):
+        request.session.pop(key, None)
 
 # -----------------------------
 # Home page
@@ -86,7 +189,7 @@ def student_register(request):
             pin = form.cleaned_data['pin'].strip()
 
             try:
-                email = clean_gmail_address(email)
+                email = clean_gmail_address(email, admission_number)
             except ValidationError as exc:
                 form.add_error("email", exc)
                 return render(request, 'vote/register.html', {'form': form})
@@ -164,6 +267,19 @@ def student_register(request):
 # -----------------------------
 def student_login(request):
     if request.method == "POST":
+        if request.POST.get("login_step") == "verify_code":
+            code = request.POST.get("verification_code", "").strip()
+            user, error = complete_two_step_login(request, code)
+
+            if error:
+                return render(request, 'vote/login.html', {
+                    'error': error,
+                    'show_code_form': True,
+                    'pending_email': request.session.get("pending_login_email"),
+                })
+
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            return redirect('vote_page')
 
         adm = request.POST.get('admission_number', '').strip()
         password = request.POST.get('password', '').strip()
@@ -173,16 +289,39 @@ def student_login(request):
 
         # CASE 1: LOGIN WITH PASSWORD
         if user:
-            login(request, user)
-            return redirect('vote_page')
+            if begin_two_step_login(request, user):
+                return render(request, 'vote/login.html', {
+                    'show_code_form': True,
+                    'pending_email': request.session.get("pending_login_email"),
+                    'message': "A verification code has been sent to your email.",
+                })
+
+            return render(request, 'vote/login.html', {
+                'error': "Could not send a verification code. Check that your email settings and registered email are correct."
+            })
 
         # CASE 2: LOGIN WITH PIN (fallback)
         student = SchoolStudent.objects.filter(admission_number=adm).first()
 
-        if student and student.user and student.pin:
-            if pin and check_password(pin, student.pin):
-                login(request, student.user)
-                return redirect('vote_page')
+        if student and student.pin:
+            if pin and student.check_pin(pin):
+                user = build_student_user(student)
+
+                if not user:
+                    return render(request, 'vote/login.html', {
+                        'error': "PIN is correct, but no email is registered for this admission number. Please register online or ask the admin to add your email."
+                    })
+
+                if begin_two_step_login(request, user):
+                    return render(request, 'vote/login.html', {
+                        'show_code_form': True,
+                        'pending_email': request.session.get("pending_login_email"),
+                        'message': "A verification code has been sent to your email.",
+                    })
+
+                return render(request, 'vote/login.html', {
+                    'error': "Could not send a verification code. Check that your email settings and registered email are correct."
+                })
 
         return render(request, 'vote/login.html', {
             'error': "Invalid credentials"
@@ -430,6 +569,49 @@ def results_page(request):
 def close(request):
     return render(request, 'vote/closed.html')
 
+
+def build_final_results_email_message(final_results, session):
+    lines = [
+        "Final school election results",
+        f"Session: {timezone.localtime(session.start_datetime)} to {timezone.localtime(session.end_datetime)}",
+    ]
+
+    for result in final_results:
+        lines.append("")
+        lines.append(result["position"])
+
+        for candidate in result["candidates"]:
+            winner_marker = " - WINNER" if candidate["id"] in result["winners_ids"] else ""
+            lines.append(
+                f"{candidate['name']} - {candidate['votes']} votes "
+                f"({candidate['percentage']}%){winner_marker}"
+            )
+
+    return "\n".join(lines)
+
+
+def send_final_results_to_registered_voters(session, final_results):
+    recipients = set()
+
+    for email in SchoolStudent.objects.exclude(email__isnull=True).exclude(email="").values_list("email", flat=True):
+        recipients.add(email.strip().lower())
+
+    for email in User.objects.exclude(email__isnull=True).exclude(email="").values_list("email", flat=True):
+        recipients.add(email.strip().lower())
+
+    if not recipients:
+        return 0
+
+    message = build_final_results_email_message(final_results, session)
+    sent_count = 0
+
+    for email in recipients:
+        if send_results_email(email, message):
+            sent_count += 1
+
+    return sent_count
+
+
 def final_results_page(request):
 
     # -----------------------------
@@ -540,26 +722,12 @@ def final_results_page(request):
 
     comments = Comment.objects.all().order_by('-timestamp')
 
-    results_email_key = f"results_email_sent_session_{session.id}"
-    user_email = request.user.email if request.user.is_authenticated else None
+    if not session.results_email_sent:
+        sent_count = send_final_results_to_registered_voters(session, final_results)
 
-    if user_email and not request.session.get(results_email_key):
-        result_lines = ["Final school election results:"]
-
-        for result in final_results:
-            result_lines.append(f"\n{result['position']}")
-            for candidate in result["candidates"]:
-                result_lines.append(
-                    f"{candidate['name']} - {candidate['votes']} votes "
-                    f"({candidate['percentage']}%)"
-                )
-
-        try:
-            send_results_email(user_email, "\n".join(result_lines))
-        except Exception:
-            pass
-
-        request.session[results_email_key] = True
+        if sent_count:
+            session.results_email_sent = True
+            session.save(update_fields=["results_email_sent"])
 
     return render(request, 'vote/final_results.html', {
         "final_results": final_results,
@@ -655,7 +823,7 @@ def ussd_callback(request):
             # REGISTER PIN
             if not student.is_ussd_registered:
 
-                if not pin or len(pin) != 4:
+                if not pin or len(pin) != 4 or not pin.isdigit():
                     return HttpResponse("END PIN must be 4 digits", content_type="text/plain")
 
                 student.pin = make_password(pin)

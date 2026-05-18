@@ -78,6 +78,7 @@ class VotingSession(models.Model):
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
     active = models.BooleanField(default=False)
+    results_email_sent = models.BooleanField(default=False)
 
     def is_open(self):
         now = timezone.now()

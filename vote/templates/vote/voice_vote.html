@@ -83,7 +83,7 @@
 <main class="voice-wrap">
     <section class="voice-panel">
         <h1>Voice Voting</h1>
-        <p>Tap start once, then listen and respond by voice.</p>
+        <p>Tap start once, then listen and vote by tapping anywhere on the screen.</p>
 
         {% csrf_token %}
         {{ voice_positions|json_script:"voice-data" }}
@@ -118,7 +118,6 @@
     const statusBox = document.getElementById("status");
     const startButton = document.getElementById("startVoice");
     const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let preferredVoice = null;
     let speechUnlocked = false;
     let voiceFlowRunning = false;
@@ -320,10 +319,11 @@
 
             setStatus(promptText);
             startButton.disabled = false;
-            startButton.textContent = "Tap your choice";
+            startButton.textContent = "Tap anywhere";
 
             function finish() {
-                startButton.removeEventListener("click", countTap);
+                document.removeEventListener("pointerup", countTap, true);
+                document.removeEventListener("keydown", countFromKeyboard, true);
                 startButton.disabled = true;
                 startButton.textContent = "Choice received";
                 resolve(taps > 0 && taps <= maxCount ? String(taps) : "");
@@ -342,8 +342,22 @@
                 timer = window.setTimeout(finish, 1400);
             }
 
-            startButton.addEventListener("click", countTap);
+            function countFromKeyboard(event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    countTap(event);
+                }
+            }
+
+            window.setTimeout(() => {
+                document.addEventListener("pointerup", countTap, true);
+                document.addEventListener("keydown", countFromKeyboard, true);
+            }, 150);
         });
+    }
+
+    function candidateFromTapCount(tapCount, candidates) {
+        const selectedNumber = Number(tapCount);
+        return candidates.find((candidate) => candidate.number === selectedNumber) || null;
     }
 
     function normalizeSpeechText(value) {
@@ -502,13 +516,7 @@
             return;
         }
 
-        if (!SpeechRecognition) {
-            await speak("This browser does not support speech recognition. Please use Google Chrome.");
-            startButton.disabled = false;
-            return;
-        }
-
-        await speak("Welcome to the accessible school election voice voting system.");
+        await speak("Welcome to the accessible school election tap voting system.");
         const selectedCandidates = [];
 
         for (const position of positions) {
@@ -519,48 +527,32 @@
                     .map((candidate) => `Number ${candidate.number}, ${candidate.name}`)
                     .join(". ");
 
-                await speak(`For ${position.name}, the options are. ${candidateList}. Please tap the button, then say only the number, for example, one or two.`);
-                const choice = await listen("Tap the green button, then say one, two, or the option number.");
-                let candidate = matchCandidate(choice, position.candidates);
+                await speak(`For ${position.name}, the options are. ${candidateList}. Tap once for option one, twice for option two, and continue the count for the option you want. Then wait.`);
+                const choice = await waitForTapCount(
+                    position.candidates.length,
+                    "Tap anywhere once for option one, twice for option two, then wait."
+                );
+                let candidate = candidateFromTapCount(choice, position.candidates);
 
                 if (!candidate) {
-                    await speak(`I heard ${choice || "nothing"}. Voice input is not clear. You can choose without seeing the screen. Tap once for option one, twice for option two, three times for option three, then wait.`);
-                    const tapChoice = await waitForTapCount(
-                        position.candidates.length,
-                        "Tap once for option one, twice for option two, three times for option three, then wait."
-                    );
-                    candidate = matchCandidate(tapChoice, position.candidates);
-
-                    if (!candidate) {
-                        await speak("I could not confirm that choice. Let us try again.");
-                        continue;
-                    }
+                    await speak("I could not confirm that tap count. Let us try again.");
+                    continue;
                 }
 
-                await speak(`You selected ${candidate.name} for ${position.name}. Tap the button and say confirm to submit, or cancel to choose again.`);
-                const confirmation = await listen("Tap the green button, then say confirm or cancel.");
+                await speak(`You selected ${candidate.name} for ${position.name}. Tap once to confirm, or twice to cancel and choose again.`);
+                const tapConfirmation = await waitForTapCount(
+                    2,
+                    "Tap anywhere once to confirm, or twice to cancel, then wait."
+                );
 
-                if (confirmation.includes("cancel")) {
+                if (tapConfirmation === "2") {
                     await speak("Selection cancelled. Restarting this position.");
                     continue;
                 }
 
-                if (!confirmation.includes("confirm")) {
-                    await speak("Confirmation was not understood. Tap once to confirm, or twice to cancel, then wait.");
-                    const tapConfirmation = await waitForTapCount(
-                        2,
-                        "Tap once to confirm, or twice to cancel, then wait."
-                    );
-
-                    if (tapConfirmation === "2") {
-                        await speak("Selection cancelled. Restarting this position.");
-                        continue;
-                    }
-
-                    if (tapConfirmation !== "1") {
-                        await speak("Confirmation was not understood. Restarting this position.");
-                        continue;
-                    }
+                if (tapConfirmation !== "1") {
+                    await speak("Confirmation was not understood. Restarting this position.");
+                    continue;
                 }
 
                 selectedCandidates.push(candidate);

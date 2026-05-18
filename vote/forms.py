@@ -40,6 +40,14 @@ class StudentRegisterForm(UserCreationForm):
 
         return admission_number
 
+    def clean_pin(self):
+        pin = self.cleaned_data['pin'].strip()
+
+        if len(pin) != 4 or not pin.isdigit():
+            raise forms.ValidationError("PIN must be exactly 4 digits.")
+
+        return pin
+
     def save(self, commit=True):
         user = super().save(commit=False)
 

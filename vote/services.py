@@ -110,6 +110,17 @@ def send_results_email(to_email, results_message):
     )
 
 
+def send_login_verification_code(to_email, code):
+    return send_email(
+        to_email,
+        "Your E-Voting Login Code",
+        (
+            "Your E-Voting login verification code is "
+            f"{code}. It expires in 10 minutes."
+        ),
+    )
+
+
 def speak(text):
     try:
         import pyttsx3
