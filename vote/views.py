@@ -25,6 +25,7 @@ from .services import (
     match_candidate,
     send_login_verification_code,
     send_results_email,
+    send_results_sms,
     send_sms,
     send_vote_confirmation,
     speak,
@@ -612,6 +613,45 @@ def send_final_results_to_registered_voters(session, final_results):
     return sent_count
 
 
+def build_final_results_sms_message(final_results):
+    lines = ["Final election results:"]
+
+    for result in final_results:
+        winners = result.get("winners") or []
+
+        if winners:
+            winner_names = ", ".join(winner["name"] for winner in winners)
+            winner_votes = winners[0]["votes"]
+            lines.append(f"{result['position']}: {winner_names} ({winner_votes} votes)")
+            continue
+
+        lines.append(f"{result['position']}: No winner")
+
+    return "\n".join(lines)
+
+
+def send_final_results_to_ussd_voters(session, final_results):
+    phones = set()
+
+    for phone in Vote.objects.filter(
+        voted_at__gte=session.start_datetime,
+        voted_at__lte=session.end_datetime,
+    ).exclude(phone__isnull=True).exclude(phone="").values_list("phone", flat=True):
+        phones.add(phone.strip())
+
+    if not phones:
+        return 0
+
+    message = build_final_results_sms_message(final_results)
+    sent_count = 0
+
+    for phone in phones:
+        if send_results_sms(phone, message):
+            sent_count += 1
+
+    return sent_count
+
+
 def final_results_page(request):
 
     # -----------------------------
@@ -733,6 +773,13 @@ def final_results_page(request):
         if sent_count:
             session.results_email_sent = True
             session.save(update_fields=["results_email_sent"])
+
+    if not session.results_sms_sent:
+        sent_count = send_final_results_to_ussd_voters(session, final_results)
+
+        if sent_count:
+            session.results_sms_sent = True
+            session.save(update_fields=["results_sms_sent"])
 
     return render(request, 'vote/final_results.html', {
         "final_results": final_results,

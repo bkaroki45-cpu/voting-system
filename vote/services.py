@@ -22,11 +22,13 @@ class VoteSubmissionError(Exception):
 
 def send_sms(phone, message):
     if not phone:
+        logger.warning("SMS not sent because phone number is empty.")
         return False
 
     try:
         import africastalking
     except ImportError:
+        logger.exception("SMS not sent because africastalking is not installed.")
         return False
 
     username = getattr(settings, "AFRICASTALKING_USERNAME", "sandbox")
@@ -34,6 +36,7 @@ def send_sms(phone, message):
     sender_id = getattr(settings, "AFRICASTALKING_SENDER_ID", None)
 
     if not api_key:
+        logger.error("SMS not sent because AFRICASTALKING_API_KEY is not configured.")
         return False
 
     africastalking.initialize(username, api_key)
@@ -45,6 +48,12 @@ def send_sms(phone, message):
         else:
             sms.send(message, [phone])
     except Exception:
+        logger.exception(
+            "SMS send failed for %s using username=%s sender_set=%s.",
+            phone,
+            username,
+            bool(sender_id),
+        )
         return False
 
     return True
@@ -169,6 +178,10 @@ def send_results_email(to_email, results_message):
         "School Election Results",
         results_message,
     )
+
+
+def send_results_sms(phone, results_message):
+    return send_sms(phone, results_message)
 
 
 def send_login_verification_code(to_email, code):
