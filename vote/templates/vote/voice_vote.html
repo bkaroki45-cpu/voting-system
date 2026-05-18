@@ -121,6 +121,7 @@
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let preferredVoice = null;
     let speechUnlocked = false;
+    let voiceFlowRunning = false;
 
     const numberWords = {
         one: 1,
@@ -240,32 +241,75 @@
         });
     }
 
-    function listen() {
+    function listen(promptText) {
         return new Promise((resolve) => {
             if (!SpeechRecognition) {
                 resolve("");
                 return;
             }
 
-            const recognition = new SpeechRecognition();
+            setStatus(promptText || "Tap the green button, then speak.");
+            startButton.disabled = false;
+            startButton.textContent = "Tap and speak now";
+
             let resolved = false;
-            recognition.lang = "en-US";
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+            let recognition = null;
 
             function finish(value) {
                 if (!resolved) {
                     resolved = true;
+                    startButton.removeEventListener("pointerdown", startListening);
+                    startButton.removeEventListener("keydown", startListeningFromKeyboard);
+                    startButton.disabled = true;
+                    startButton.textContent = "Listening finished";
                     resolve(value);
                 }
             }
 
-            recognition.onresult = (event) => {
-                finish(event.results[0][0].transcript.toLowerCase().trim());
-            };
-            recognition.onerror = () => finish("");
-            recognition.onend = () => finish("");
-            recognition.start();
+            function startListening(event) {
+                if (event) {
+                    event.preventDefault();
+                }
+
+                if (resolved) {
+                    return;
+                }
+
+                setStatus("Listening now. Say only the number.");
+                startButton.disabled = true;
+                startButton.textContent = "Listening...";
+
+                recognition = new SpeechRecognition();
+                recognition.lang = "en-US";
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 3;
+
+                recognition.onresult = (event) => {
+                    const transcript = Array.from(event.results[0])
+                        .map((result) => result.transcript)
+                        .join(" ")
+                        .toLowerCase()
+                        .trim();
+                    finish(transcript);
+                };
+                recognition.onerror = () => finish("");
+                recognition.onend = () => finish("");
+
+                try {
+                    recognition.start();
+                } catch (error) {
+                    finish("");
+                }
+            }
+
+            function startListeningFromKeyboard(event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    startListening(event);
+                }
+            }
+
+            startButton.addEventListener("pointerdown", startListening);
+            startButton.addEventListener("keydown", startListeningFromKeyboard);
         });
     }
 
@@ -407,8 +451,14 @@
     }
 
     async function runVoiceVoting() {
+        if (voiceFlowRunning) {
+            return;
+        }
+
+        voiceFlowRunning = true;
         unlockSpeech();
         startButton.disabled = true;
+        startButton.textContent = "Voice voting started";
 
         if (!positions.length) {
             await speak("You have no remaining positions to vote for.");
@@ -432,17 +482,17 @@
                     .map((candidate) => `Number ${candidate.number}, ${candidate.name}`)
                     .join(". ");
 
-                await speak(`For ${position.name}, the options are. ${candidateList}. Please say only the number, for example, one or two.`);
-                const choice = await listen();
+                await speak(`For ${position.name}, the options are. ${candidateList}. Please tap the button, then say only the number, for example, one or two.`);
+                const choice = await listen("Tap the green button, then say one, two, or the option number.");
                 const candidate = matchCandidate(choice, position.candidates);
 
                 if (!candidate) {
-                    await speak(`I heard ${choice || "nothing"}. Please say only the option number, like one or two.`);
+                    await speak(`I heard ${choice || "nothing"}. We will try again. Tap the button and say only the number.`);
                     continue;
                 }
 
-                await speak(`You selected ${candidate.name} for ${position.name}. Say confirm to submit, or cancel to choose again.`);
-                const confirmation = await listen();
+                await speak(`You selected ${candidate.name} for ${position.name}. Tap the button and say confirm to submit, or cancel to choose again.`);
+                const confirmation = await listen("Tap the green button, then say confirm or cancel.");
 
                 if (confirmation.includes("cancel")) {
                     await speak("Selection cancelled. Restarting this position.");
