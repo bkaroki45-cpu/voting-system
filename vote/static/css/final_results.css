@@ -246,6 +246,13 @@ body{
     background: #eff6ff;
 }
 
+.results-actions{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
 
 
 .comment-section{

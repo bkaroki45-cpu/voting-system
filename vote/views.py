@@ -669,6 +669,137 @@ def send_final_results_to_ussd_voters(session, final_results):
     return sent_count
 
 
+def get_latest_session():
+    return VotingSession.objects.order_by('-start_datetime').first()
+
+
+def build_ussd_final_results_message(session):
+    if not session:
+        return "END No voting session found"
+
+    if session.is_open():
+        return "END Final results are available after voting closes"
+
+    final_results = build_final_results(session)
+    lines = ["END Final results:"]
+
+    for result in final_results:
+        winners = result.get("winners") or []
+
+        if winners:
+            winner_names = ", ".join(winner["name"] for winner in winners)
+            winner_votes = winners[0]["votes"]
+            lines.append(f"{result['position']}: {winner_names} ({winner_votes} votes)")
+            continue
+
+        lines.append(f"{result['position']}: No winner")
+
+    return "\n".join(lines)
+
+
+def build_final_results_pdf_lines(final_results, session):
+    lines = [
+        "Final Election Results",
+        f"Session: {timezone.localtime(session.start_datetime)} to {timezone.localtime(session.end_datetime)}",
+        "",
+    ]
+
+    for result in final_results:
+        lines.append(result["position"])
+
+        for candidate in result["candidates"]:
+            winner_marker = " - WINNER" if candidate["id"] in result["winners_ids"] else ""
+            lines.append(
+                f"  {candidate['name']} - {candidate['votes']} votes "
+                f"({candidate['percentage']}%){winner_marker}"
+            )
+
+        lines.append("")
+
+    return lines
+
+
+def escape_pdf_text(value):
+    return str(value).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def build_simple_pdf(lines):
+    pages = []
+    lines_per_page = 42
+
+    for start in range(0, len(lines), lines_per_page):
+        pages.append(lines[start:start + lines_per_page])
+
+    if not pages:
+        pages = [["No results available."]]
+
+    objects = []
+    catalog_id = 1
+    pages_id = 2
+    font_id = 3
+    next_id = 4
+    page_ids = []
+
+    for page_lines in pages:
+        content_id = next_id
+        page_id = next_id + 1
+        next_id += 2
+        page_ids.append(page_id)
+
+        text_commands = ["BT", "/F1 12 Tf", "72 760 Td", "16 TL"]
+
+        for index, line in enumerate(page_lines):
+            if index:
+                text_commands.append("T*")
+            text_commands.append(f"({escape_pdf_text(line)}) Tj")
+
+        text_commands.append("ET")
+        content = "\n".join(text_commands).encode("utf-8")
+
+        objects.append((content_id, b"<< /Length %d >>\nstream\n" % len(content) + content + b"\nendstream"))
+        objects.append((
+            page_id,
+            (
+                f"<< /Type /Page /Parent {pages_id} 0 R "
+                f"/MediaBox [0 0 612 792] /Contents {content_id} 0 R "
+                f"/Resources << /Font << /F1 {font_id} 0 R >> >> >>"
+            ).encode("utf-8"),
+        ))
+
+    kids = " ".join(f"{page_id} 0 R" for page_id in page_ids)
+    all_objects = [
+        (catalog_id, f"<< /Type /Catalog /Pages {pages_id} 0 R >>".encode("utf-8")),
+        (pages_id, f"<< /Type /Pages /Kids [{kids}] /Count {len(page_ids)} >>".encode("utf-8")),
+        (font_id, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"),
+    ] + objects
+
+    all_objects = sorted(all_objects, key=lambda item: item[0])
+    pdf = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+
+    for object_id, body in all_objects:
+        offsets.append(len(pdf))
+        pdf.extend(f"{object_id} 0 obj\n".encode("utf-8"))
+        pdf.extend(body)
+        pdf.extend(b"\nendobj\n")
+
+    xref_offset = len(pdf)
+    pdf.extend(f"xref\n0 {len(all_objects) + 1}\n".encode("utf-8"))
+    pdf.extend(b"0000000000 65535 f \n")
+
+    for offset in offsets[1:]:
+        pdf.extend(f"{offset:010d} 00000 n \n".encode("utf-8"))
+
+    pdf.extend(
+        (
+            f"trailer\n<< /Size {len(all_objects) + 1} /Root {catalog_id} 0 R >>\n"
+            f"startxref\n{xref_offset}\n%%EOF\n"
+        ).encode("utf-8")
+    )
+
+    return bytes(pdf)
+
+
 def final_results_page(request):
 
     # -----------------------------
@@ -737,6 +868,23 @@ def final_results_page(request):
     })
 
 
+def download_final_results_pdf(request):
+    session = get_latest_session()
+
+    if not session:
+        return HttpResponse("No voting session found.", status=404)
+
+    if session.is_open():
+        return HttpResponse("Final results are available after voting closes.", status=403)
+
+    final_results = build_final_results(session)
+    pdf_content = build_simple_pdf(build_final_results_pdf_lines(final_results, session))
+
+    response = HttpResponse(pdf_content, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="final_results_session_{session.id}.pdf"'
+    return response
+
+
 
 
 
@@ -786,15 +934,7 @@ def ussd_callback(request):
         student = SchoolStudent.objects.filter(admission_number=adm).first() if adm else None
 
         session = get_active_session()
-
-        # =========================
-        # SESSION CHECK
-        # =========================
-        if not session or not session.is_open():
-            if session:
-                send_session_results_notifications(session)
-
-            return HttpResponse("END Voting closed", content_type="text/plain")
+        latest_session = get_latest_session()
 
         # =========================
         # STEP 1: ENTER ADM
@@ -841,7 +981,7 @@ def ussd_callback(request):
                 return HttpResponse("END Wrong PIN", content_type="text/plain")
 
             return HttpResponse(
-                f"CON Welcome {student.full_name}\n1. Vote",
+                f"CON Welcome {student.full_name}\n1. Vote\n2. View final results",
                 content_type="text/plain"
             )
 
@@ -855,8 +995,23 @@ def ussd_callback(request):
 
             vote_choice = safe_int(parts[2])
 
+            if vote_choice == 2:
+                if latest_session and not latest_session.is_open():
+                    send_session_results_notifications(latest_session)
+
+                return HttpResponse(
+                    build_ussd_final_results_message(latest_session),
+                    content_type="text/plain",
+                )
+
             if vote_choice != 1:
                 return HttpResponse("END Invalid option", content_type="text/plain")
+
+            if not session or not session.is_open():
+                if latest_session:
+                    send_session_results_notifications(latest_session)
+
+                return HttpResponse("END Voting closed", content_type="text/plain")
 
             positions = list(Position.objects.order_by("id"))
 
@@ -876,6 +1031,12 @@ def ussd_callback(request):
 
             if not is_authenticated(student, pin):
                 return HttpResponse("END Authentication failed", content_type="text/plain")
+
+            if not session or not session.is_open():
+                if latest_session:
+                    send_session_results_notifications(latest_session)
+
+                return HttpResponse("END Voting closed", content_type="text/plain")
 
             pos_index = safe_int(parts[3])
             positions = list(Position.objects.order_by("id"))
@@ -906,6 +1067,12 @@ def ussd_callback(request):
 
             if not is_authenticated(student, pin):
                 return HttpResponse("END Authentication failed", content_type="text/plain")
+
+            if not session or not session.is_open():
+                if latest_session:
+                    send_session_results_notifications(latest_session)
+
+                return HttpResponse("END Voting closed", content_type="text/plain")
 
             pos_index = safe_int(parts[3])
             cand_index = safe_int(parts[4])

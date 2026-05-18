@@ -15,6 +15,7 @@ urlpatterns = [
 
     # FINAL RESULTS
     path('final-results/', views.final_results_page, name='final_results_page'),
+    path('final-results/download/', views.download_final_results_pdf, name='download_final_results_pdf'),
 
     # SESSION CLOSED PAGE
     path('close/', views.close, name='close'),

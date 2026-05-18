@@ -92,7 +92,10 @@
         <p class="no-results">No results available yet.</p>
     {% endif %}
 
-    <a href="{% url 'vote_page' %}" class="back-btn">⬅ Back to Vote</a>
+    <div class="results-actions">
+        <a href="{% url 'download_final_results_pdf' %}" class="back-btn">Download PDF</a>
+        <a href="{% url 'vote_page' %}" class="back-btn">⬅ Back to Vote</a>
+    </div>
 
     {% if error_message %}
         <p style="color:red;">{{ error_message }}</p>
