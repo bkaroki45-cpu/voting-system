@@ -31,6 +31,10 @@ from .services import (
     speak,
     submit_vote,
 )
+from .results_notifications import (
+    build_final_results,
+    send_session_results_notifications,
+)
 
 
 def add_registration_email_field(form):
@@ -350,6 +354,7 @@ def vote_page(request):
         })
 
     if not session.is_open():
+        send_session_results_notifications(session)
         return render(request, 'vote/closed.html', {
             'message': 'Voting is currently closed.',
             'session': session
@@ -366,6 +371,7 @@ def vote_page(request):
 
         # re-check session on submit
         if not session.is_open():
+            send_session_results_notifications(session)
             return render(request, 'vote/closed.html', {
                 'message': 'Voting closed while submitting.',
                 'session': session
@@ -424,6 +430,9 @@ def voice_vote_view(request):
     session = get_active_session()
 
     if not session or not session.is_open():
+        if session:
+            send_session_results_notifications(session)
+
         if request.method == "POST":
             return JsonResponse({"ok": False, "message": "Voting is currently closed."}, status=400)
 
@@ -559,6 +568,9 @@ def results_page(request):
     if session:
         session_end_datetime = session.end_datetime
 
+        if not session.is_open():
+            send_session_results_notifications(session)
+
     return render(request, 'vote/results.html', {
         'results': results,
         'session': session,
@@ -568,6 +580,11 @@ def results_page(request):
 
 
 def close(request):
+    session = VotingSession.objects.order_by('-start_datetime').first()
+
+    if session and not session.is_open():
+        send_session_results_notifications(session)
+
     return render(request, 'vote/closed.html')
 
 
@@ -706,80 +723,11 @@ def final_results_page(request):
             )
             return redirect('final_results_page')
 
-    # -----------------------------
-    # FILTERED VOTES (SESSION SAFE FIX)
-    # -----------------------------
-    votes = Vote.objects.filter(
-        voted_at__gte=session.start_datetime,
-        voted_at__lte=session.end_datetime
-    ).select_related("candidate", "position")
-
-    votes_by_candidate = {}
-    votes_by_position = {}
-
-    for vote in votes:
-        votes_by_candidate[vote.candidate_id] = votes_by_candidate.get(vote.candidate_id, 0) + 1
-        votes_by_position[vote.position_id] = votes_by_position.get(vote.position_id, 0) + 1
-
-    # -----------------------------
-    # BUILD RESULTS
-    # -----------------------------
-    final_results = []
-
-    for position in Position.objects.all():
-
-        candidates = Candidate.objects.filter(position=position)
-
-        total_votes = votes_by_position.get(position.id, 0)
-
-        candidate_results = []
-        max_votes = 0
-
-        for candidate in candidates:
-
-            vote_count = votes_by_candidate.get(candidate.id, 0)
-
-            max_votes = max(max_votes, vote_count)
-
-            percentage = (vote_count / total_votes * 100) if total_votes else 0
-
-            candidate_results.append({
-                "id": candidate.id,
-                "name": candidate.name,
-                "party": candidate.party or "",
-                "votes": vote_count,
-                "percentage": round(percentage, 1),
-                "photo": candidate.photo.url if candidate.photo else None,
-            })
-
-        winners = [
-            c for c in candidate_results if c["votes"] == max_votes
-        ] if max_votes > 0 else []
-
-        winner_ids = [w["id"] for w in winners]
-
-        final_results.append({
-            "position": position.name,
-            "candidates": candidate_results,
-            "winners": winners,
-            "winners_ids": winner_ids
-        })
+    final_results = build_final_results(session)
 
     comments = Comment.objects.filter(visibility=Comment.PUBLIC).order_by('-timestamp')
 
-    if not session.results_email_sent:
-        sent_count = send_final_results_to_registered_voters(session, final_results)
-
-        if sent_count:
-            session.results_email_sent = True
-            session.save(update_fields=["results_email_sent"])
-
-    if not session.results_sms_sent:
-        sent_count = send_final_results_to_ussd_voters(session, final_results)
-
-        if sent_count:
-            session.results_sms_sent = True
-            session.save(update_fields=["results_sms_sent"])
+    send_session_results_notifications(session, final_results)
 
     return render(request, 'vote/final_results.html', {
         "final_results": final_results,
@@ -843,6 +791,9 @@ def ussd_callback(request):
         # SESSION CHECK
         # =========================
         if not session or not session.is_open():
+            if session:
+                send_session_results_notifications(session)
+
             return HttpResponse("END Voting closed", content_type="text/plain")
 
         # =========================

@@ -11,6 +11,7 @@ from django.urls import path
 from django.utils.html import format_html
 
 from .models import VotingSession, SchoolStudent, Position, Candidate, Vote, Comment
+from .results_notifications import send_session_results_notifications
 
 
 def build_session_results(session):
@@ -92,6 +93,34 @@ def reset_election(modeladmin, request, queryset):
 class VotingSessionAdmin(admin.ModelAdmin):
     list_display = ('id', 'export_link')
     actions = [reset_election]
+
+    def save_model(self, request, obj, form, change):
+        was_open = False
+
+        if change:
+            previous = VotingSession.objects.filter(pk=obj.pk).first()
+            was_open = previous.is_open() if previous else False
+
+        super().save_model(request, obj, form, change)
+
+        obj.refresh_from_db()
+
+        should_send_results = (
+            change
+            and not obj.is_open()
+            and (was_open or not obj.results_email_sent or not obj.results_sms_sent)
+        )
+
+        if should_send_results:
+            sent_counts = send_session_results_notifications(obj)
+            messages.info(
+                request,
+                (
+                    "Session closed. Results sent to "
+                    f"{sent_counts['email']} email recipient(s) and "
+                    f"{sent_counts['sms']} SMS recipient(s)."
+                ),
+            )
 
     def export_link(self, obj):
         return format_html(
