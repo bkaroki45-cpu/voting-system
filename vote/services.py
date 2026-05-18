@@ -1,9 +1,12 @@
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
+import logging
 
 from .models import Vote
 
+
+logger = logging.getLogger(__name__)
 
 VOTE_CONFIRMATION_MESSAGE = (
     "Your vote has been successfully recorded in the school election system."
@@ -46,16 +49,28 @@ def send_sms(phone, message):
 
 def send_email(to_email, subject, message):
     if not to_email:
+        logger.warning("Email not sent because recipient address is empty.")
         return False
 
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
 
     if not from_email:
+        logger.error(
+            "Email not sent because DEFAULT_FROM_EMAIL/EMAIL_HOST_USER is not configured."
+        )
         return False
 
     try:
         send_mail(subject, message, from_email, [to_email], fail_silently=False)
     except Exception:
+        logger.exception(
+            "Email send failed for %s using host=%s port=%s tls=%s user_set=%s.",
+            to_email,
+            getattr(settings, "EMAIL_HOST", None),
+            getattr(settings, "EMAIL_PORT", None),
+            getattr(settings, "EMAIL_USE_TLS", None),
+            bool(getattr(settings, "EMAIL_HOST_USER", None)),
+        )
         return False
 
     return True
